@@ -1,58 +1,67 @@
 import time
-import Monsoon.HVPM as HVPM
-import Monsoon.sampleEngine as sampleEngine
-import Monsoon.Operations as op
+import sys
+sys.path.append(".")
+from setting import PHINE_IP,PHINE_PORT
 import subprocess
 class PowerLogger:
-	def __init__(self,ip,port):
-		self.power=0
-		self.ip = f"{ip}:{port}"
-		self.voltage=0
-		self.current=0
-		self.power_data = []
-		self.voltage_data = []
-		self.current_data = []
-		# self.Mon = HVPM.Monsoon()
-		# self.Mon.setup_usb()
-		# self.engine = sampleEngine.SampleEngine(self.Mon)
-		# self.engine.disableCSVOutput()
-		# self.engine.ConsoleOutput(False)
+    def __init__(self,ip,port):
+        self.power=0
+        self.ip = f"{ip}:{port}"
+        self.voltage=0
+        self.current=0
+        self.bool_power_supply= 0 # 1 供电 0 不供电
+        self.power_data = []
+        self.voltage_data = []
+        self.current_data = []
 
-	def _getTime(self):
-		return time.clock_gettime(time.CLOCK_REALTIME)
 
-	def getPower(self):
-		# self.engine.enableChannel(sampleEngine.channels.MainCurrent)
-		# self.engine.enableChannel(sampleEngine.channels.MainVoltage)
-		# self.engine.startSampling(1)
-		# sample = self.engine.getSamples()
-		# current = sample[sampleEngine.channels.MainCurrent][0]
-		# voltage = sample[sampleEngine.channels.MainVoltage][0]
-		# self.Mon.stopSampling()
-		# self.engine.disableChannel(sampleEngine.channels.MainCurrent)
-		# self.engine.disableChannel(sampleEngine.channels.MainVoltage)
-		# self.power = current * voltage
-		# self.power_data.append(self.power)
-		#print(self.power)
-		return self.getCurrent * self.getVoltage
 
-	def getVoltage(self):
-		# self.engine.startSampling(1)
-		# sample = self.engine.getSamples()
-		# voltage = sample[sampleEngine.channels.MainVoltage][0]
-		# self.Mon.stopSampling()
-		voltage = 1
-		self.voltage = voltage
-		self.voltage_data.append(self.voltage)
 
-		return voltage
 
-	def getCurrent(self):
-		# self.engine.startSampling(1)
-		# sample = self.engine.getSamples()
-		# current = sample[sampleEngine.channels.MainCurrent][0]
-		# self.Mon.stopSampling()
-		current = 1
-		self.current = current
-		self.current_data.append(self.current)
-		return current
+
+    def getVoltage(self):
+        
+        command = f'adb -s {self.ip} shell " cat /sys/class/power_supply/battery/voltage_now" '
+        out  = subprocess.check_output(command).decode('utf-8')
+
+        self.voltage = int(out)/1000
+        self.voltage_data.append(self.voltage)
+
+        return self.voltage
+
+    def getCurrent(self):
+
+        command = f'adb -s {self.ip} shell " cat /sys/class/power_supply/battery/current_now" '
+        out  = subprocess.check_output(command).decode('utf-8')
+        self.current = int(out)
+        if self.current < 0:
+            self.bool_power_supply = 0
+        else:
+            self.bool_power_supply = 1
+        self.current = abs(self.current)/1000
+        self.current_data.append(self.current)
+  
+        return self.current
+    def getPower(self):
+    # self.engine.enableChannel(sampleEngine.channels.MainCurrent)
+    # self.engine.enableChannel(sampleEngine.channels.MainVoltage)
+    # self.engine.startSampling(1)
+    # sample = self.engine.getSamples()
+    # current = sample[sampleEngine.channels.MainCurrent][0]
+    # voltage = sample[sampleEngine.channels.MainVoltage][0]
+    # self.Mon.stopSampling()
+    # self.engine.disableChannel(sampleEngine.channels.MainCurrent)
+    # self.engine.disableChannel(sampleEngine.channels.MainVoltage)
+        self.power = self.getCurrent() * self.getVoltage()
+       
+        self.power_data.append(self.power)
+      
+        return self.power/1e6
+    def print(self):
+        print("Current mA:",self.getCurrent())
+        print("Voltage mV:",self.getVoltage())
+        print("Power",self.getPower())
+if __name__ == "__main__":
+    batter = PowerLogger(PHINE_IP,PHINE_PORT)
+    print(batter.getPower())
+

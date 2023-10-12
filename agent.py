@@ -9,7 +9,8 @@ import random
 import socket
 import struct
 import math
-import setting
+import sys
+from setting import *
 with warnings.catch_warnings():  
 	warnings.filterwarnings("ignore",category=FutureWarning)
 	from tensorflow.python.keras import backend as K

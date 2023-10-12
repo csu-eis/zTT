@@ -31,7 +31,7 @@ class GPU:
         output = subprocess.check_output(command)
         output = output.decode('utf-8')
         output = output.strip()
-        print(int(output)/1000)
+        # print(int(output)/1000)
         return int(output)/1000
 
     def getGPUclock(self):
@@ -51,15 +51,15 @@ class GPU:
         freq = int(output[start_index:end_index])
         
        
-        print(freq)
+        # print(freq)
   
         return int(freq)/1000000
 
     def collectdata(self):
         self.clock_data.append(self.getGPUclock())
         self.temp_data.append(self.getGPUtemp())
-        print(self.clock_data)
-        print(self.temp_data)
+        # print(self.clock_data)
+        # print(self.temp_data)
 
     def setUserspace(self):
         pass
@@ -85,9 +85,9 @@ class GPU:
         # output = output.decode('utf-8')
         # output = output.strip()
         return self.getGPUclock()
-        print('[gpu]{}Hz'.format(output))
+        # print('[gpu]{}Hz'.format(output))
 if __name__ == "__main__":
-    gpu = GPU(IP,PORT)
+    gpu = GPU(PHINE_IP,PHINE_PORT)
     gpu.setGPUclock(7)
     gpu.getGPUclock()
     # gpu.collectdata()
