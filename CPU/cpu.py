@@ -1,5 +1,8 @@
 import subprocess
 import re
+import sys
+sys.path.append(".")
+from setting import IP,PORT
 little_cpu_clock_list = [2000000 ,1800000, 1725000, 1625000, 1525000, 1450000, 1350000, 1250000, 1075000 ,1000000, 925000, 850000, 750000, 675000, 600000, 500000]
 middle_cpu_clock_list = [2600000, 2507000, 2354000, 2200000, 1985000, 1855000, 1740000, 1624000, 1537000, 1451000, 1335000, 1162000, 1046000, 902000, 700000, 437000]
 big_cpu_clock_list =    [3000000, 2892000, 2713000, 2600000, 2463000, 2284000, 2141000, 1998000, 1820000, 1632000, 1482000, 1370000, 1258000, 1108000, 921000, 659000]
@@ -49,9 +52,10 @@ class CPU:
         out = subprocess.check_output(commad)
         numbers = re.findall(r'\d+', out.decode())
         numbers = [int(num) for num in numbers]
+        print(numbers)
 
         numbers[cpu_cluster[self.idx]*2+1] = i
-        print(cpu_cluster[i],numbers)
+        print(numbers)
         commad = f'adb -s {self.ip} shell "echo {numbers[1]} {numbers[3]} {numbers[5]} > /proc/ppm/policy/ut_fix_freq_idx"'
         print(commad)
         subprocess.check_output(commad)
@@ -155,15 +159,16 @@ class CPU:
 
 if __name__ == "__main__":
     print("main start \n")
-    cpucontrel0 = CPU(0,'5',"172.16.101.94","43407")
-    cpucontrel4 = CPU(4,'5',"172.16.101.94","43407")
-    cpucontrel7 = CPU(7,'5',"172.16.101.94","43407")
-    cpucontrel0.setCPUclock(7)
-    cpucontrel7.setCPUclock(5)
+    cpucontrel0 = CPU(0,'5',IP,PORT)
+    cpucontrel4 = CPU(4,'5',IP,PORT)
+    cpucontrel7 = CPU(7,'5',IP,PORT)
+    cpucontrel0.setCPUclock(14)
+    cpucontrel4.setCPUclock(14)
+    cpucontrel7.setCPUclock(14)
     cpucontrel0.getCPUtemp()
-    cpucontrel0.getCPUclock(5)
+    # cpucontrel0.getCPUclock(5)
     cpucontrel0.collectdata()
     cpucontrel0.collectdata()
     cpucontrel0.collectdata()
-    cpucontrel7.setUserspace()
-    cpucontrel4.setUserspace()
+    # cpucontrel7.setUserspace()
+    # cpucontrel4.setUserspace()

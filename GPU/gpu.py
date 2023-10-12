@@ -1,5 +1,8 @@
 import subprocess
+import sys
+sys.path.append(".")
 
+from setting import *
 # gpu_clock_list=[180000000, 267000000, 355000000, 430000000]
 gpu_clock_list= [886000, 879000, 873000, 867000, 861000, 854000, 848000, 842000, 836000, 825000, 815000, 805000, 795000, 785000, 775000, 765000, 755000, 745000, 735000, 725000, 715000, 705000, 695000, 685000, 675000, 654000, 634000, 614000, 593000, 573000, 553000, 532000, 512000, 492000, 471000, 451000, 431000, 410000, 390000, 370000, 350000]
 dir_thermal='/sys/devices/virtual/thermal'
@@ -84,19 +87,19 @@ class GPU:
         return self.getGPUclock()
         print('[gpu]{}Hz'.format(output))
 if __name__ == "__main__":
-    gpu = GPU("172.16.101.79","33991")
+    gpu = GPU(IP,PORT)
     gpu.setGPUclock(7)
     gpu.getGPUclock()
     # gpu.collectdata()
     # gpu.collectdata()
     gpu.setdefault()
     gpu.getGPUclock()
-    gpu.setGPUclock(9)
+    gpu.setGPUclock(40)
     gpu.getGPUclock()
-    gpu.getGPUclock()
-    gpu.getGPUclock()
-    gpu.getGPUclock()
-    gpu.setdefault()
+    # gpu.getGPUclock()
+    # gpu.getGPUclock()
+    # gpu.getGPUclock()
+    # gpu.setdefault()
     # i = 300000
     # while i :
     #     gpu.getGPUclock()
