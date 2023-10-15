@@ -3,3 +3,5 @@ __pycache__
 *.csv
 ./CPU
 fps.py
+tmp/
+*.h5

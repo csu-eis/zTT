@@ -15,8 +15,9 @@ import sys
 from setting import *
 from SurfaceFlinger.get_fps import SurfaceFlingerFPS
 from PowerLogger.powerlogger import PowerLogger
-from CPU.cpu import CPU
-from GPU.gpu import GPU
+from CPU.dimensity_8050_cpu import CPU
+from GPU.dimensity_8050_gpu import GPU
+
 
 
 if __name__=="__main__":
@@ -31,9 +32,9 @@ if __name__=="__main__":
     '''
     parser = argparse.ArgumentParser()
     # parser.add_argument('--app', type=str, required=True, choices=['showroom', 'skype', 'call'], help="Application name for learning")
-    parser.add_argument('--exp_time', type=int, default='20', help="Time steps for learning")
-    # parser.add_argument('--server_ip', type=str, required=True, help="Agent server IP")
-    # parser.add_argument('--server_port', type=int, default=8702, help="Agent server port number")
+    # parser.add_argument('--exp_time', type=int, default='20', help="Time steps for learning")
+    # parser.add_argument('--server_ip', type=str,default=SERVER_IP, required=True, help="Agent server IP")
+    # parser.add_argument('--server_port', type=int, default=SERVER_PORT, help="Agent server port number")
     parser.add_argument('--target_fps', type=int, default = 40, help="Target FPS")
     # parser.add_argument('--pixel_ip', type=str, required=True, help="Pixel device IP for connecting device via adb")
     # parser.add_argument('--pixel_port', type=str, required=True, help="Pixel device port for connecting device via adb")
@@ -45,7 +46,7 @@ if __name__=="__main__":
     pixel_ip = PHINE_IP
     pixel_port = PHINE_PORT
     target_fps = 40
-    experiment_time = args.exp_time
+    experiment_time = EXPERIMENT_TIME
   
   
     t=0
@@ -59,27 +60,28 @@ if __name__=="__main__":
     print("connect successful")
     '''  
         Create big, LITTLE and GPU instances 
-        For Pixel 3a, c0 -> LITTLE, c6 -> big, g -> GPU
+        For Camon20 P 5G, c0 -> little, c4 -> miidle, c6 -> big, g -> GPU
     '''
     c0=CPU(0, cpu_type='l', ip=PHINE_IP, port=PHINE_PORT)
-    c6=CPU(6, cpu_type='m', ip=PHINE_IP, port=PHINE_PORT)
+    c4=CPU(4, cpu_type='m', ip=PHINE_IP, port=PHINE_PORT)
+    c7=CPU(7, cpu_type='b', ip=PHINE_IP, port=PHINE_PORT)
     g=GPU(PHINE_IP,PHINE_PORT)
     pl=PowerLogger(PHINE_IP,PHINE_PORT)
 
     ''' Set CPU and GPU governor to userspace '''
-    c0.setUserspace()
-    c6.setUserspace()
-    g.setUserspace()
+    # c0.setUserspace()
+    # c6.setUserspace()
+    # g.setUserspace()
 
     ''' Set CPU and GPU clock to maximum before starting '''
-    c0.setCPUclock(8)
-    c6.setCPUclock(8)
-    g.setGPUclock(3)
+    # c0.setCPUclock(8)
+    # c6.setCPUclock(8)
+    # g.setGPUclock(3)
 
     ''' Check whether setting clocks is properly or not '''
-    c0.getCPUclock()
-    c6.getCPUclock()
-    g.getGPUclock()
+    # c0.getCPUclock()
+    # c6.getCPUclock()
+    # g.getGPUclock()
 
     ''' Create fps driver '''
     # if app == 'showroom':
@@ -93,7 +95,7 @@ if __name__=="__main__":
     # view = "\"com.skype.raider/com.skype4life.MainActivity#0\""
     #view = "\"SurfaceView - com.android.chrome/org.chromium.chrome.browser.ChromeTabbedActivity#0\""
     
-    sf_fps_driver = SurfaceFlingerFPS(app, PHINE_IP,PHINE_PORT)
+    sf_fps_driver = SurfaceFlingerFPS(app, PHINE_IP,PHINE_PORT, keyword="com.tencent.ig")
     
     ''' 
         Set initial state
@@ -122,7 +124,8 @@ if __name__=="__main__":
         ts.append(t)
 
         c0.collectdata()
-        c6.collectdata()
+        c4.collectdata()
+        c7.collectdata()
         g.collectdata()
         
         c_p=int(pl.getPower())
@@ -149,7 +152,8 @@ if __name__=="__main__":
         g_c=int(clk[1])
 
         c0.setCPUclock(c_c)
-        c6.setCPUclock(c_c)
+        c4.setCPUclock(c_c)
+        c7.setCPUclock(c_c)
         g.setGPUclock(g_c)
 
         t=t+1
@@ -170,14 +174,16 @@ if __name__=="__main__":
     f=open('temp_skype_zTT.csv','w',encoding='utf-8',newline='')
     wr=csv.writer(f)
     wr.writerow(c0.temp_data)
-    wr.writerow(c6.temp_data)
+    wr.writerow(c4.temp_data)
+    wr.writerow(c7.temp_data)
     wr.writerow(g.temp_data)
     f.close()
 
     f=open('clock_skype_zTT.csv','w',encoding='utf-8',newline='')
     wr=csv.writer(f)
     wr.writerow(c0.clock_data)
-    wr.writerow(c6.clock_data)
+    wr.writerow(c4.clock_data)
+    wr.writerow(c7.clock_data)
     wr.writerow(g.clock_data)
     f.close()
 
@@ -206,7 +212,8 @@ if __name__=="__main__":
     ax2.set_ylim([0, 70])
     ax2.grid(True)
     ax2.plot(ts,c0.temp_data,label='LITTLE')
-    ax2.plot(ts,c6.temp_data,label='Big')
+    ax2.plot(ts,c4.temp_data,label='MIDDLE')
+    ax2.plot(ts,c7.temp_data,label='BIG')
     ax2.plot(ts,g.temp_data,label='GPU')
     ax2.legend(loc='upper right')
     ax2.set_title('temperature')
@@ -216,7 +223,8 @@ if __name__=="__main__":
     ax3.set_ylim([0, 2000])
     ax3.grid(True)
     ax3.plot(ts,c0.clock_data,label='LITTLE')
-    ax3.plot(ts,c6.clock_data,label='Big')
+    ax3.plot(ts,c4.clock_data,label='MIDDLE')
+    ax3.plot(ts,c7.clock_data,label='BIG')
     ax3.plot(ts,g.clock_data,label='GPU')
     ax3.legend(loc='upper right')
     ax3.set_title('clock')
@@ -229,7 +237,7 @@ if __name__=="__main__":
     ax4.axhline(y=target_fps, color='r', linewidth=1)
     ax4.legend(loc='upper right')
     ax4.set_title('fps')
-    
+    # plt.title("client")
     plt.show()
 
 

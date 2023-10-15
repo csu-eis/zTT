@@ -4,25 +4,27 @@ import subprocess
 import re
 
 import sys
-sys.path.append(".") 
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__))+"/..")
 from setting import *
 nanoseconds_per_second = 1e9
 
 class SurfaceFlingerFPS():
 
-	def __init__(self, x, ip,port):
+	def __init__(self, x, ip,port,keyword="com.tencent.ig"):
 		
 		self.ip = f"{ip}:{port}"
 	
 		self.fps = 0
 		self.hardware_fps = 0
-		self.view = self.get_sufaceView()
-	def get_sufaceView(self):
+		self.view = self.get_sufaceView(keyword)
+  
+	def get_sufaceView(self,keyword):
 		commad = f'adb  -s {self.ip} shell "dumpsys SurfaceFlinger --list"'
 		out  = subprocess.check_output(commad).decode('utf-8')
 		for i in out.split('\n'):
 			i.strip()
-			if i.startswith("SurfaceView") and "BLAST" in i:
+			if i.startswith("SurfaceView") and "BLAST" in i and keyword in i:
 				name = i.replace("\r", "")
 				self.get_sufaceView = name
 		return name

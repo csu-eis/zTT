@@ -25,11 +25,11 @@ with warnings.catch_warnings():
 	
 
 PORT = 8702
-experiment_time=500 #14100
+experiment_time=EXPERIMENT_TIME #14100
 clock_change_time=30
 cpu_power_limit=1000
 gpu_power_limit=1600
-action_space=9
+action_space=16*40
 target_fps=60
 target_temp=65
 beta=2 #4
@@ -40,19 +40,23 @@ sess = tf.compat.v1.Session(config=config)
 K.set_session(sess)
 
 class DQNAgent:
-	def __init__(self, state_size, action_size):
-		self.load_model = False
+	def __init__(self, state_size, action_size,load_model=False,weights=""):
+		self.load_model = load_model
 		self.training=0
 		self.state_size=state_size
 		self.action_size=action_size
-		self.actions=list(range(9))
+		
+  		# TODO 改动一下action数量
+		self.actions=list(range(action_space))
 		self.q_table=defaultdict(lambda:[0.0 for i in range(action_space)])
 		self.clk_action_list=[]
-		for i in range(3):
-			for j in range(3):
-				clk_action=(3*i+2,j+1)
+  
+		for i in range(16):
+			for j in range(40):
+				clk_action=(i,j)
 				self.clk_action_list.append(clk_action)
-
+		# TODO 改动一下action数量
+	
 		# Hyperparameter
 		self.learning_rate=0.05    # 0.01
 		self.discount_factor=0.99
@@ -62,14 +66,14 @@ class DQNAgent:
 		self.epsilon_start, self.epsilon_end = 1.0, 0.0 # 1.0, 0.1
 #		self.exploration_steps = 500
 #		self.epsilon_decay_step = (self.epsilon_start - self.epsilon_end) / self.exploration_steps
-		self.batch_size = 64
-		self.train_start = 150 #200
+		self.batch_size = 4
+		self.train_start = 4 #200
 #		self.update_target_rate = 10000
 		self.q_max=0
 		self.avg_q_max=0
 		self.currentLoss=0
 		# Replay memory (=500)
-		self.memory = deque(maxlen=500)
+		self.memory = deque(maxlen=8)
 #		self.no_op_steps = 30
 		# model initialization
 		self.model = self.build_model()
@@ -122,6 +126,7 @@ class DQNAgent:
 		model.summary()
 		model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
 		return model
+
 	def update_target_model(self):
 		self.target_model.set_weights(self.model.get_weights())
 	
@@ -130,11 +135,13 @@ class DQNAgent:
 		#print('state={}'.format(state))
 		if np.random.rand() <= self.epsilon:
 			q_value=self.model.predict(state)
-			print('state={}, q_value={}, action=exploration, epsilon={}'.format(state[0], q_value[0], self.epsilon))
+			print('state={}, action=exploration, epsilon={}'.format(state[0], self.epsilon))
 			return random.randrange(self.action_size)
 		else:
+			s = time.time()
 			q_value = self.model.predict(state)
-			print('state={}, q_value={}, action={}, epsilon={}'.format(state[0], q_value[0], np.argmax(q_value[0]), self.epsilon))
+			e = time.time()
+			print('state={}, action={}, epsilon={}, lat={} ms'.format(state[0], np.argmax(q_value[0]), self.epsilon,(e-s)*1000))
 			return np.argmax(q_value[0])
 	
 	def append_sample(self, state, action, reward, next_state, done):
@@ -217,8 +224,8 @@ def get_reward(fps, power, target_fps, c_t, g_t, c_t_prev, g_t_prev, beta):
 	return u+v1+v2+beta/power
 	
 if __name__=="__main__":
-
-	agent = DQNAgent(7,9)
+	os.makedirs("save_model/",exist_ok=True)
+	agent = DQNAgent(7,action_space)
 	scores, episodes = [], []
 
 	t=1
@@ -232,8 +239,8 @@ if __name__=="__main__":
 	reward_tmp=[]
 
 	cnt=0
-	c_c=3
-	g_c=3
+	c_c=16
+	g_c=40
 	c_t=37
 	g_t=37
 	# ac= 1
@@ -252,13 +259,14 @@ if __name__=="__main__":
 
 	try:
 		client_socket, address = server_socket.accept()
-		fig = plt.figure(figsize=(12,14))
+		fig = plt.figure(figsize=(6,7))
 		ax1 = fig.add_subplot(4, 1, 1)
 		ax2 = fig.add_subplot(4, 1, 2)
 		ax3 = fig.add_subplot(4, 1, 3)
 		ax4 = fig.add_subplot(4, 1, 4)
 
 		while t<experiment_time:
+			# 获取到手机的state信息
 			msg = client_socket.recv(512).decode()
 			state_tmp = msg.split(',')
 			
@@ -279,7 +287,7 @@ if __name__=="__main__":
 			fps_data.append(fps)
 			power_data.append((c_p+g_p)*100)
 			
-
+			# 根据next state预测出q max值
 			next_state=(c_c, g_c, c_p, g_p, c_t, g_t,fps)
 			agent.q_max+=np.amax(agent.model.predict(np.array([next_state])))
 			agent.avg_q_max=agent.q_max/(t)
@@ -317,21 +325,22 @@ if __name__=="__main__":
 			# get action
 			state=next_state
 
-
+			
 			if c_t>=target_temp:
-				c_c=int(3*random.randint(0,int(c_c/3))+2)
-				g_c=int(random.randint(1,g_c))
-
-				action=3*int(c_c/3)+int(g_c)-1
+       			# cool down atction 随便找一个比当前挡位低的level
+				c_c=int(random.randint(0,int(c_c)))
+				g_c=int(random.randint(0,int(g_c)))
+				action = c_c * 40 + g_c
 			elif target_temp-c_t>=3:
 				if fps<target_fps:
 					if np.random.rand() <= 0.3:
 						print('previous clock : {} {}'.format(c_c,g_c))
-						c_c=int(3*random.randint(int(c_c/3),2)+2)
-						g_c=int(random.randint(g_c,3))
+						c_c=int(random.randint(int(c_c),16))
+						g_c=int(random.randint(int(g_c),40))
 
 						print('explore higher clock@@@@@  {} {}'.format(c_c,g_c))
-						action=3*int(c_c/3)+int(g_c)-1
+						action = c_c * 40 + g_c
+						# action=3*int(c_c/3)+int(g_c)-1
 					else:
 						action=agent.get_action(state)
 						c_c=agent.clk_action_list[action][0]
@@ -381,7 +390,7 @@ if __name__=="__main__":
 			ax4.set_xticks([0, 500, 1000, 1500, 2000])
 			ax4.set_xlabel('Time (s) ')
 			ax4.grid(True)
-			
+			plt.tight_layout()
 			plt.pause(0.1)
 
 
@@ -391,8 +400,8 @@ if __name__=="__main__":
 			if t%60 == 0:
 				agent.learning_rate=0.1
 				print('[Reset learning_rate]')
-			if t%500 == 0:
-				agent.model.save_weights("./save_model/model.h5")
+			if t%10 == 0:
+				agent.model.save_weights("save_model/model.h5")
 				print("[Save model]")
 			if t==experiment_time:
 				break
@@ -409,6 +418,7 @@ if __name__=="__main__":
 	plt.legend(loc='upper left')
 	plt.title('Average max-Q')
 	plt.show()
+	plt.savefig("tmp/p.png")
 
 	
 

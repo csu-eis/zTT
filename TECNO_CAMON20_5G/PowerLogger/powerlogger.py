@@ -1,6 +1,7 @@
 import time
 import sys
-sys.path.append(".")
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__))+"/..")
 from setting import PHINE_IP,PHINE_PORT
 import subprocess
 class PowerLogger:
@@ -13,10 +14,6 @@ class PowerLogger:
         self.power_data = []
         self.voltage_data = []
         self.current_data = []
-
-
-
-
 
 
     def getVoltage(self):
