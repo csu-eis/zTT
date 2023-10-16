@@ -19,3 +19,5 @@ cat gx_top_app_pid
 top | grep 
 shell dumpsys activity top
 ```
+# 项目源地址
+https://github.com/ztt-21/zTT
