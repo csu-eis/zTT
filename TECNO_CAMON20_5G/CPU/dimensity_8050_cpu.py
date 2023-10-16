@@ -55,7 +55,7 @@ class CPU:
 
         
     def getCPUtemp(self):
-        fname="/sys/class/thermal/thermal_zone0/temp  "
+        fname="/sys/class/thermal/thermal_zone4/temp  "
         commad = f'adb -s {self.ip} shell "cat {fname}"'
         output = subprocess.check_output(commad)
         output = output.decode('utf-8')

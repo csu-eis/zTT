@@ -45,7 +45,7 @@ if __name__=="__main__":
     server_port = SERVER_PORT
     pixel_ip = PHINE_IP
     pixel_port = PHINE_PORT
-    target_fps = 40
+    target_fps = 25
     experiment_time = EXPERIMENT_TIME
   
   
@@ -95,7 +95,8 @@ if __name__=="__main__":
     # view = "\"com.skype.raider/com.skype4life.MainActivity#0\""
     #view = "\"SurfaceView - com.android.chrome/org.chromium.chrome.browser.ChromeTabbedActivity#0\""
     
-    sf_fps_driver = SurfaceFlingerFPS(app, PHINE_IP,PHINE_PORT, keyword="com.tencent.ig")
+    # sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword="org.videolan.vlc")
+    sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword="com.tencent.ig")
     
     ''' 
         Set initial state

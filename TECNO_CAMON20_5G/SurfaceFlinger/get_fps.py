@@ -14,7 +14,6 @@ class SurfaceFlingerFPS():
 	def __init__(self,ip,port,keyword):
 		
 		self.ip = f"{ip}:{port}"
-		self.ip = "10105252CF000197"
 		self.fps = 0
 		self.hardware_fps = 0
 		self.view = self.get_sufaceView(keyword)

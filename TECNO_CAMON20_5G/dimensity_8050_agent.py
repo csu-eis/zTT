@@ -30,7 +30,7 @@ clock_change_time=30
 cpu_power_limit=1000
 gpu_power_limit=1600
 action_space=16*40
-target_fps=60
+target_fps=50
 target_temp=65
 beta=2 #4
 
@@ -202,26 +202,26 @@ class DQNAgent:
 		return random.choice(max_index_list)
 
 
+def get_w(t,t_s):
+    l_v = 1
+    if t < t_s:
+        return l_v * math.tanh(t_s - t)
+    else:
+        return -10 * l_v
 
-def get_reward(fps, power, target_fps, c_t, g_t, c_t_prev, g_t_prev, beta):
+def get_reward(fps, power, target_fps, c_t, g_t, c_t_s, g_t_s, beta):
 	v1=0
 	v2=0
 	print('power={}'.format(power))
 	u=max(1,fps/target_fps)
 
-	if g_t<= target_temp:
-		v2=0
-	else:
-		v2=2*(target_temp-g_t)
-	if c_t_prev < target_temp:
-		if c_t >= target_temp:
-			v1=-2
+	w = get_w(c_t,c_t_s) + get_w(g_t,g_t_s)
 
 	if fps>=target_fps:
 		u=1
 	else :
-		u=math.exp(0.1*(fps-target_fps))
-	return u+v1+v2+beta/power
+		u=fps/target_fps
+	return u+w+beta/power
 	
 if __name__=="__main__":
 	os.makedirs("save_model/",exist_ok=True)
@@ -295,13 +295,13 @@ if __name__=="__main__":
 			loss_data.append(agent.currentLoss)
 
 			# reward
-			reward = get_reward(fps, c_p+g_p, target_fps, c_t, g_t, c_t_prev, g_t_prev, beta)
+			# reward = get_reward(fps, c_p+g_p, target_fps, c_t, g_t, target_temp, target_temp, beta)
 
 			# Handle dummy value at the first sensing
 			if (c_p+g_p<=0):
 				c_p=20
 				g_p=13
-			reward = get_reward(fps, c_p+g_p, target_fps, c_t, g_t, c_t_prev, g_t_prev, beta)
+			reward = get_reward(fps, c_p+g_p, target_fps, c_t, g_t, target_temp, target_temp, beta)
 			reward_tmp.append(reward)
 			if(len(reward_tmp)>=300) :
 				reward_tmp.pop(0)
@@ -328,16 +328,16 @@ if __name__=="__main__":
 			
 			if c_t>=target_temp:
        			# cool down atction 随便找一个比当前挡位低的level
-				c_c=int(random.randint(int(c_c),16))
-				g_c=int(random.randint(int(g_c),40))
+				c_c=int(random.randint(int(c_c),16-1))
+				g_c=int(random.randint(int(g_c),40-1))
 				action = c_c * 40 + g_c
 			elif target_temp-c_t>=3:
 				if fps<target_fps:
 					if np.random.rand() <= 0.3:
 						print('previous clock : {} {}'.format(c_c,g_c))
 						# NOTE CHECK THESE
-						c_c=int(0,random.randint(int(c_c)))
-						g_c=int(0,random.randint(int(g_c)))
+						c_c=int(random.randint(0,int(c_c)))
+						g_c=int(random.randint(0,int(g_c)))
 
 						print('explore higher clock@@@@@  {} {}'.format(c_c,g_c))
 						action = c_c * 40 + g_c
