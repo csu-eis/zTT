@@ -328,15 +328,16 @@ if __name__=="__main__":
 			
 			if c_t>=target_temp:
        			# cool down atction 随便找一个比当前挡位低的level
-				c_c=int(random.randint(0,int(c_c)))
-				g_c=int(random.randint(0,int(g_c)))
+				c_c=int(random.randint(int(c_c),16))
+				g_c=int(random.randint(int(g_c),40))
 				action = c_c * 40 + g_c
 			elif target_temp-c_t>=3:
 				if fps<target_fps:
 					if np.random.rand() <= 0.3:
 						print('previous clock : {} {}'.format(c_c,g_c))
-						c_c=int(random.randint(int(c_c),16))
-						g_c=int(random.randint(int(g_c),40))
+						# NOTE CHECK THESE
+						c_c=int(0,random.randint(int(c_c)))
+						g_c=int(0,random.randint(int(g_c)))
 
 						print('explore higher clock@@@@@  {} {}'.format(c_c,g_c))
 						action = c_c * 40 + g_c

@@ -7,6 +7,11 @@ from setting import PHINE_IP,PHINE_PORT
 little_cpu_clock_list = [2000000 ,1800000, 1725000, 1625000, 1525000, 1450000, 1350000, 1250000, 1075000 ,1000000, 925000, 850000, 750000, 675000, 600000, 500000]
 middle_cpu_clock_list = [2600000, 2507000, 2354000, 2200000, 1985000, 1855000, 1740000, 1624000, 1537000, 1451000, 1335000, 1162000, 1046000, 902000, 700000, 437000]
 big_cpu_clock_list =    [3000000, 2892000, 2713000, 2600000, 2463000, 2284000, 2141000, 1998000, 1820000, 1632000, 1482000, 1370000, 1258000, 1108000, 921000, 659000]
+
+# little_cpu_clock_list.reverse()
+# middle_cpu_clock_list.reverse()
+# big_cpu_clock_list.reverse()
+
 dir_thermal='/sys/devices/virtual/thermal'
 cpu_cluster= {0: 0, 1:0, 2:0, 3:0 ,4:1, 5:1 ,6:1 ,7:2}
 cpu_policy = {0: "policy0",1: "policy0",2: "policy0",3: "policy0",4: "policy4",5: "policy4",6: "policy4",7: "policy7"}
