@@ -138,22 +138,21 @@ if __name__=="__main__":
         fps = float(sf_fps_driver.get_fps())
         if fps > 60:
             fps = 60.0
+            
         fps_data.append(fps)
-        
         c0.collectdata()
         c4.collectdata()
         c7.collectdata()
         g.collectdata()
         
-        c_p=int(pl.getPower())
-        print(c_p)
-        if c_p == 0:
-            continue
+        c_p=int(pl.getPower()) 
+        c_t=float(c0.getCPUtemp())
+        g_t=float(g.getGPUtemp())
+
         g_p=0
         # time.sleep(3.7)
         
-        c_t=float(c0.getCPUtemp())
-        g_t=float(g.getGPUtemp())
+
         next_state=(c_c, g_c, c_p, g_p, c_t, g_t, fps)
         # c_c: CPU clock g_c: GPU cock c_p: power g_p: ? c_t: CPU_temp g_t :gpu_temp fps
         send_msg=str(c_c)+','+str(g_c)+','+str(c_p)+','+str(g_p)+','+str(c_t)+','+str(g_t)+','+str(fps)
@@ -161,6 +160,8 @@ if __name__=="__main__":
         client_socket.send(send_msg.encode())
         print('[{}] state:{} next_state:{} fps:{}'.format(t, state, next_state, fps))
         state=next_state
+        
+        
         # get action
         recv_msg=client_socket.recv(SERVER_PORT).decode()
         clk=recv_msg.split(',')
