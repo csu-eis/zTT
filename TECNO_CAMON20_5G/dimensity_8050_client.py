@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import os
 import time
 import cv2
@@ -11,168 +10,21 @@ import csv
 import struct
 import math
 import sys
-
 from setting import *
 from SurfaceFlinger.get_fps import SurfaceFlingerFPS
 from PowerLogger.powerlogger import PowerLogger
 from CPU.dimensity_8050_cpu import CPU
 from GPU.dimensity_8050_gpu import GPU
 
-
-
-if __name__=="__main__":
-
-    ''' 
-        --app			Application name [showroom, skype, call]
-        --exp_time 		Time steps for learning
-        --server_ip		Agent server IP
-        --server_port	Agent server port
-        --target_fps	Target FPS
-        --pixel_ip		Pixel device IP for connecting device via adb
-    '''
-    parser = argparse.ArgumentParser()
-    # parser.add_argument('--app', type=str, required=True, choices=['showroom', 'skype', 'call'], help="Application name for learning")
-    # parser.add_argument('--exp_time', type=int, default='20', help="Time steps for learning")
-    # parser.add_argument('--server_ip', type=str,default=SERVER_IP, required=True, help="Agent server IP")
-    # parser.add_argument('--server_port', type=int, default=SERVER_PORT, help="Agent server port number")
-    parser.add_argument('--target_fps', type=int, default = 40, help="Target FPS")
-    # parser.add_argument('--pixel_ip', type=str, required=True, help="Pixel device IP for connecting device via adb")
-    # parser.add_argument('--pixel_port', type=str, required=True, help="Pixel device port for connecting device via adb")
-    args = parser.parse_args()
-    app = "com.tencent.ig"
+def save_csv(fps_data,c0,c4,c7,g,csv_path = CSV_PATH):
+    pass
     
-    server_ip = SERVER_IP
-    server_port = SERVER_PORT
-    pixel_ip = PHINE_IP
-    pixel_port = PHINE_PORT
-    target_fps = 25
-    experiment_time = EXPERIMENT_TIME
-  
-  
-    t=0
-    ts=[]
-    fps_data=[]
-
-    ''' Connect to agent server '''
-    print("start successful")
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((server_ip, server_port))
-    print("connect successful")
-    '''  
-        Create big, LITTLE and GPU instances 
-        For Camon20 P 5G, c0 -> little, c4 -> miidle, c6 -> big, g -> GPU
-    '''
-    c0=CPU(0, cpu_type='l', ip=PHINE_IP, port=PHINE_PORT)
-    c4=CPU(4, cpu_type='m', ip=PHINE_IP, port=PHINE_PORT)
-    c7=CPU(7, cpu_type='b', ip=PHINE_IP, port=PHINE_PORT)
-    g=GPU(PHINE_IP,PHINE_PORT)
-    pl=PowerLogger(PHINE_IP,PHINE_PORT)
-
-    ''' Set CPU and GPU governor to userspace '''
-    # c0.setUserspace()
-    # c6.setUserspace()
-    # g.setUserspace()
-
-    ''' Set CPU and GPU clock to maximum before starting '''
-    # c0.setCPUclock(8)
-    # c6.setCPUclock(8)
-    # g.setGPUclock(3)
-
-    ''' Check whether setting clocks is properly or not '''
-    # c0.getCPUclock()
-    # c6.getCPUclock()
-    # g.getGPUclock()
-
-    ''' Create fps driver '''
-    # if app == 'showroom':
-    #     view = "\"SurfaceView - com.android.chrome/com.google.android.apps.chrome.Main#0\""
-    # elif app == 'skype':
-    #     view = "\"com.skype.raider/com.skype4life.MainActivity#0\""
-    # elif app == 'call':
-    #     view = "\"SurfaceView - com.tencent.tmgp.kr.codm/com.tencent.tmgp.cod.CODMainActivity#0\""	
-    
-    #view = "\"SurfaceView - com.tencent.tmgp.kr.codm/com.tencent.tmgp.cod.CODMainActivity#0\""
-    # view = "\"com.skype.raider/com.skype4life.MainActivity#0\""
-    #view = "\"SurfaceView - com.android.chrome/org.chromium.chrome.browser.ChromeTabbedActivity#0\""
-    
-    # sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword="org.videolan.vlc")
-    sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword="com.tencent.ig")
-    
-    ''' 
-        Set initial state
-        c_c -> CPU clock
-        g_c -> GPU clock
-        c_t -> CPU temperature
-        g_t -> GPU temperature
-        c_p -> power
-    '''
-    c_c=8
-    g_c=3
-    c_t=float(c0.getCPUtemp())
-    g_t=float(g.getGPUtemp())
-    state=(c_c,g_c,int(pl.getPower()/100),0, c_t, g_t)
-    time.sleep(4)
-
-
-    print("Start learning")
-    ''' Start learning '''
-    while(1):
-        fps = float(sf_fps_driver.get_fps())
-        if fps > 60:
-            fps = 60.0
-        fps_data.append(fps)
-        
-        ts.append(t)
-
-        c0.collectdata()
-        c4.collectdata()
-        c7.collectdata()
-        g.collectdata()
-        
-        c_p=int(pl.getPower())
-        print(c_p)
-        if c_p == 0:
-            continue
-        g_p=0
-        # time.sleep(3.7)
-        
-        c_t=float(c0.getCPUtemp())
-        g_t=float(g.getGPUtemp())
-        next_state=(c_c, g_c, c_p, g_p, c_t, g_t, fps)
-        # c_c CPU clock g_c GPU cock c_p: power g_p: ? c_t: CPU_temp g_t :gpu_temp fps
-        send_msg=str(c_c)+','+str(g_c)+','+str(c_p)+','+str(g_p)+','+str(c_t)+','+str(g_t)+','+str(fps)
-        print("clinet send")
-        client_socket.send(send_msg.encode())
-        print('[{}] state:{} next_state:{} fps:{}'.format(t, state, next_state, fps))
-        state=next_state
-        # get action
-        recv_msg=client_socket.recv(SERVER_PORT).decode()
-        clk=recv_msg.split(',')
-
-        c_c=int(clk[0])
-        g_c=int(clk[1])
-
-        c0.setCPUclock(c_c)
-        c4.setCPUclock(c_c)
-        c7.setCPUclock(c_c)
-        g.setGPUclock(g_c)
-
-        t=t+1
-        if t==experiment_time:
-            break
-
-
-    # Logging results
-    print('Average Total power={} mW'.format(sum(pl.power_data)/len(pl.power_data)))
-    print('Average fps = {} fps'.format(sum(fps_data)/len(fps_data)))
-
-    ts = range(0, len(fps_data))
-    f=open('power_skype_zTT.csv','w',encoding='utf-8',newline='')
+    f=open(csv_path,'w',encoding='utf-8',newline='')
     wr=csv.writer(f)
     wr.writerow(pl.power_data[1:])
     f.close()
 
-    f=open('temp_skype_zTT.csv','w',encoding='utf-8',newline='')
+    f=open(csv_path,'w',encoding='utf-8',newline='')
     wr=csv.writer(f)
     wr.writerow(c0.temp_data)
     wr.writerow(c4.temp_data)
@@ -180,7 +32,7 @@ if __name__=="__main__":
     wr.writerow(g.temp_data)
     f.close()
 
-    f=open('clock_skype_zTT.csv','w',encoding='utf-8',newline='')
+    f=open(csv_path,'w',encoding='utf-8',newline='')
     wr=csv.writer(f)
     wr.writerow(c0.clock_data)
     wr.writerow(c4.clock_data)
@@ -188,12 +40,12 @@ if __name__=="__main__":
     wr.writerow(g.clock_data)
     f.close()
 
-    f=open('fps_skype_zTT.csv','w',encoding='utf-8',newline='')
+    f=open(csv_path,'w',encoding='utf-8',newline='')
     wr=csv.writer(f)
     wr.writerow(fps_data)
     f.close()
-
-    # Plot results
+def zTT_plot(fps_data,c0,c4,c7,g,pl,target_fps):
+    ts = range(0, len(fps_data))
     fig = plt.figure(figsize=(12, 14))
     ax1 = fig.add_subplot(2, 2, 1)
     ax2 = fig.add_subplot(2, 2, 2)
@@ -240,6 +92,96 @@ if __name__=="__main__":
     ax4.set_title('fps')
     # plt.title("client")
     plt.show()
+
+if __name__=="__main__":
+
+    ''' 
+        Set initial state
+        c_c -> CPU clock
+        g_c -> GPU clock
+        c_t -> CPU temperature
+        g_t -> GPU temperature
+        c_p -> power
+    '''
+    
+    app = TARGET_APP
+    server_ip = SERVER_IP
+    server_port = SERVER_PORT
+    pixel_ip = PHINE_IP
+    pixel_port = PHINE_PORT
+    target_fps = TARGET_FPS
+    experiment_time = EXPERIMENT_TIME
+  
+    c0=CPU(0, cpu_type='l', ip=PHINE_IP, port=PHINE_PORT)
+    c4=CPU(4, cpu_type='m', ip=PHINE_IP, port=PHINE_PORT)
+    c7=CPU(7, cpu_type='b', ip=PHINE_IP, port=PHINE_PORT)
+    g=GPU(PHINE_IP,PHINE_PORT)
+    pl=PowerLogger(PHINE_IP,PHINE_PORT)
+    
+    # sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword="org.videolan.vlc")
+    sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword=TARGET_APP)
+    
+    fps_data=[]
+    c_c=8
+    g_c=3
+    c_t=float(c0.getCPUtemp())
+    g_t=float(g.getGPUtemp())
+    state=(c_c,g_c,int(pl.getPower()/100),0, c_t, g_t)
+    
+    print("start successful")
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((server_ip, server_port)) / print("connect successful")
+    time.sleep(4)
+
+    print("Start learning")
+    for t in range(experiment_time) :
+        fps = float(sf_fps_driver.get_fps())
+        if fps > 60:
+            fps = 60.0
+        fps_data.append(fps)
+        
+        c0.collectdata()
+        c4.collectdata()
+        c7.collectdata()
+        g.collectdata()
+        
+        c_p=int(pl.getPower())
+        print(c_p)
+        if c_p == 0:
+            continue
+        g_p=0
+        # time.sleep(3.7)
+        
+        c_t=float(c0.getCPUtemp())
+        g_t=float(g.getGPUtemp())
+        next_state=(c_c, g_c, c_p, g_p, c_t, g_t, fps)
+        # c_c: CPU clock g_c: GPU cock c_p: power g_p: ? c_t: CPU_temp g_t :gpu_temp fps
+        send_msg=str(c_c)+','+str(g_c)+','+str(c_p)+','+str(g_p)+','+str(c_t)+','+str(g_t)+','+str(fps)
+        print("clinet send")
+        client_socket.send(send_msg.encode())
+        print('[{}] state:{} next_state:{} fps:{}'.format(t, state, next_state, fps))
+        state=next_state
+        # get action
+        recv_msg=client_socket.recv(SERVER_PORT).decode()
+        clk=recv_msg.split(',')
+
+        c_c=int(clk[0])
+        g_c=int(clk[1])
+
+        c0.setCPUclock(c_c)
+        c4.setCPUclock(c_c)
+        c7.setCPUclock(c_c)
+        g.setGPUclock(g_c)
+
+    # Logging results
+    print('Average Total power={} mW'.format(sum(pl.power_data)/len(pl.power_data)))
+    print('Average fps = {} fps'.format(sum(fps_data)/len(fps_data)))
+    
+    save_csv(fps_data,c0,c4,c7,g,csv_path = CSV_PATH)
+    
+    # Plot results
+    zTT_plot(fps_data,c0,c4,c7,g,pl,target_fps)
+   
 
 
 

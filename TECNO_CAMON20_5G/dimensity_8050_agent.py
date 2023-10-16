@@ -24,14 +24,14 @@ with warnings.catch_warnings():
 	from tensorflow.python.keras import optimizers
 	
 
-PORT = 8702
+PORT = SERVER_PORT
 experiment_time=EXPERIMENT_TIME #14100
 clock_change_time=30
 cpu_power_limit=1000
 gpu_power_limit=1600
-action_space=16*40
-target_fps=50
-target_temp=65
+action_space=ACTION_SPACE
+target_fps=TARGET_FPS
+target_temp=TARGET_TEMP
 beta=2 #4
 
 config = tf.compat.v1.ConfigProto()

@@ -21,3 +21,6 @@ shell dumpsys activity top
 ```
 # 项目源地址
 https://github.com/ztt-21/zTT
+
+# 参数设置
+在文件夹下 setting.py文件中
