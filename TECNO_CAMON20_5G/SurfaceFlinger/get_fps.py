@@ -11,10 +11,10 @@ nanoseconds_per_second = 1e9
 
 class SurfaceFlingerFPS():
 
-	def __init__(self, x, ip,port,keyword="com.tencent.ig"):
+	def __init__(self,ip,port,keyword):
 		
 		self.ip = f"{ip}:{port}"
-	
+		self.ip = "10105252CF000197"
 		self.fps = 0
 		self.hardware_fps = 0
 		self.view = self.get_sufaceView(keyword)
@@ -22,11 +22,15 @@ class SurfaceFlingerFPS():
 	def get_sufaceView(self,keyword):
 		commad = f'adb  -s {self.ip} shell "dumpsys SurfaceFlinger --list"'
 		out  = subprocess.check_output(commad).decode('utf-8')
+		name = ""
 		for i in out.split('\n'):
 			i.strip()
 			if i.startswith("SurfaceView") and "BLAST" in i and keyword in i:
+				print(i)
 				name = i.replace("\r", "")
 				self.get_sufaceView = name
+				break
+		print("name",name)
 		return name
 		
 	def get_fps(self):
@@ -44,12 +48,15 @@ class SurfaceFlingerFPS():
 		# print(hardware,fps)
 		return fps	
 
+	def check_top_app(self):
+		""" 检查top app 是否是 目标app"""
 		
 	
 
 if __name__ == "__main__":
-    view ="com.android.chrome"
-    fps = SurfaceFlingerFPS(view,PHINE_IP,PHINE_PORT)
- 
+    app ="org.videolan.vlc"
+    fps = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT,keyword=app)
+    
     fps.get_fps()
+    print(fps.fps)
     

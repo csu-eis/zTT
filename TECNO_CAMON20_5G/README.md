@@ -11,3 +11,11 @@
 # 说明
 原项目链接 [地址](https://github.com/ztt-21/zTT)  
 论文地址[地址](https://dl.acm.org/doi/10.1145/3458864.3468161)
+
+# 一些指令
+```bash
+cd /sys/module/ged/parameters/gx_top_app_pid
+cat gx_top_app_pid
+top | grep 
+shell dumpsys activity top
+```
