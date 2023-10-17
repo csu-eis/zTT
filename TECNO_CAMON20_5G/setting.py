@@ -1,6 +1,6 @@
 """IP Address Setting"""
 PHINE_IP = "172.16.101.79"
-PHINE_PORT = 37069
+PHINE_PORT = 5555
 
 SERVER_IP="127.0.0.1"
 SERVER_PORT=8702
@@ -16,10 +16,10 @@ GPU_POWER_LIMIT=1600
 # gpu_power_limit=1600
 
 """Targe Setting"""
-TARGET_FPS = 50
-TARGET_TEMP = 50
+TARGET_FPS = 60
+TARGET_TEMP = 70
 #TARGET_APP = "com.tencent.ig"
-TARGET_APP = "org.videolan.vlc"
-
+# TARGET_APP = "org.videolan.vlc"
+TARGET_APP = "mobi.eis.cocpuandgpu.MultiPersonsEstimationActivity"
 """Other"""
 CSV_PATH = f"./{TARGET_APP}_{TARGET_FPS}_{TARGET_TEMP}_{EXPERIMENT_TIME}.csv"

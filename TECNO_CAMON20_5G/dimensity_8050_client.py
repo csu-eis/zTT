@@ -124,8 +124,10 @@ if __name__=="__main__":
     fps_data=[]
     c_c=8
     g_c=3
-    c_t=float(c0.getCPUtemp())
-    g_t=float(g.getGPUtemp())
+    c_t=[]
+    g_t=[]
+    c_p=[]
+    g_p=[]
     state=(c_c,g_c,int(pl.getPower()/100),0, c_t, g_t)
     
     print("start successful")
@@ -135,6 +137,7 @@ if __name__=="__main__":
     time.sleep(4)
 
     print("Start learning")
+    iter = 15
     for t in range(experiment_time) :
         fps = float(sf_fps_driver.get_fps())
         if fps > 60:
@@ -146,34 +149,39 @@ if __name__=="__main__":
         c7.collectdata()
         g.collectdata()
         
-        c_p=int(pl.getPower()) 
-        c_t=float(c0.getCPUtemp())
-        g_t=float(g.getGPUtemp())
-
-        g_p=0
-        # time.sleep(3.7)
+        c_p.append(int(pl.getPower()) )
+        c_t.append(float(c0.getCPUtemp()))
+        g_t.append(float(g.getGPUtemp()))
+        g_p.append(0)
+        # 
         
 
-        next_state=(c_c, g_c, c_p, g_p, c_t, g_t, fps)
-        # c_c: CPU clock g_c: GPU cock c_p: power g_p: ? c_t: CPU_temp g_t :gpu_temp fps
-        send_msg=str(c_c)+','+str(g_c)+','+str(c_p)+','+str(g_p)+','+str(c_t)+','+str(g_t)+','+str(fps)
-        print("clinet send")
-        client_socket.send(send_msg.encode())
-        print('[{}] state:{} next_state:{} fps:{}'.format(t, state, next_state, fps))
-        state=next_state
-        
-        
-        # get action
-        recv_msg=client_socket.recv(SERVER_PORT).decode()
-        clk=recv_msg.split(',')
+        if iter>=15:
+            next_state=(c_c, g_c, np.average(np.asanyarray(c_p)), np.average(np.asanyarray(g_p)), np.average(np.asanyarray(c_t)), np.average(np.asanyarray(g_t)), np.average(np.asanyarray(fps)))
+            # c_c: CPU clock g_c: GPU cock c_p: power g_p: ? c_t: CPU_temp g_t :gpu_temp fps
+            send_msg=str(c_c)+','+str(g_c)+','+str(np.average(np.asanyarray(c_p)))+','+str( np.average(np.asanyarray(g_p)))+','+str(np.average(np.asanyarray(c_t)))+','+str(np.average(np.asanyarray(g_t)))+','+str(np.average(np.asanyarray(fps)))
+            print("clinet send")
+            client_socket.send(send_msg.encode())
+            print('[{}] state:{} next_state:{} fps:{}'.format(t, state, next_state, fps))
+            state=next_state
+            
+            
+            # get action
+            recv_msg=client_socket.recv(SERVER_PORT).decode()
+            clk=recv_msg.split(',')
 
-        c_c=int(clk[0])
-        g_c=int(clk[1])
+            c_c=int(clk[0])
+            g_c=int(clk[1])
 
-        c0.setCPUclock(c_c)
-        c4.setCPUclock(c_c)
-        c7.setCPUclock(c_c)
-        g.setGPUclock(g_c)
+            c0.setCPUclock(c_c)
+            c4.setCPUclock(c_c)
+            c7.setCPUclock(c_c)
+            g.setGPUclock(g_c)
+            iter=0
+            
+            
+        iter+=1
+        time.sleep(0.5)
 
     # Logging results
     print('Average Total power={} mW'.format(sum(pl.power_data)/len(pl.power_data)))
