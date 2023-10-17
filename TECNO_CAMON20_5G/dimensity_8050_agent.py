@@ -220,6 +220,7 @@ def get_reward(fps, power, target_fps, c_t, g_t, c_t_s, g_t_s, beta):
 if __name__=="__main__":
 	os.makedirs("save_model/",exist_ok=True)
 	agent = DQNAgent(7,action_space)
+	agent = DQNAgent(7,action_space,load_model=True,weights="save_model/model.h5")
 	scores, episodes = [], []
 
 	t=1
