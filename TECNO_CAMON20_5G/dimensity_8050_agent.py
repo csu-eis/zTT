@@ -26,9 +26,9 @@ with warnings.catch_warnings():
 
 PORT = SERVER_PORT
 experiment_time=EXPERIMENT_TIME #14100
-clock_change_time=30
-cpu_power_limit=1000
-gpu_power_limit=1600
+# clock_change_time=30
+# cpu_power_limit=1000
+# gpu_power_limit=1600
 action_space=ACTION_SPACE
 target_fps=TARGET_FPS
 target_temp=TARGET_TEMP

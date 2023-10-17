@@ -12,7 +12,7 @@ import math
 import sys
 from setting import *
 from SurfaceFlinger.get_fps import SurfaceFlingerFPS
-from PowerLogger.powerlogger import PowerLogger
+from PowerLogger.dimensity_8050_power import PowerLogger
 from CPU.dimensity_8050_cpu import CPU
 from GPU.dimensity_8050_gpu import GPU
 
@@ -130,7 +130,8 @@ if __name__=="__main__":
     
     print("start successful")
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((server_ip, server_port)) / print("connect successful")
+    client_socket.connect((server_ip, server_port)) 
+    print("connect successful")
     time.sleep(4)
 
     print("Start learning")

@@ -86,16 +86,20 @@ class GPU:
         # output = output.strip()
         return self.getGPUclock()
         # print('[gpu]{}Hz'.format(output))
+    def gpu_print(self):
+        while 1:
+            print(self.getCurrentClock())
 if __name__ == "__main__":
     gpu = GPU(PHINE_IP,PHINE_PORT)
     gpu.setGPUclock(7)
     gpu.getGPUclock()
     # gpu.collectdata()
     # gpu.collectdata()
-    gpu.setdefault()
+    # gpu.setdefault()
     gpu.getGPUclock()
-    gpu.setGPUclock(40)
+    gpu.setGPUclock(len(gpu_clock_list)-1)
     gpu.getGPUclock()
+    gpu.gpu_print()
     # gpu.getGPUclock()
     # gpu.getGPUclock()
     # gpu.getGPUclock()

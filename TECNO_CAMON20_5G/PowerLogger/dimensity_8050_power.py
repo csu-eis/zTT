@@ -53,7 +53,7 @@ class PowerLogger:
        
         self.power_data.append(self.power)
       
-        return self.power/1e6
+        return self.power/1e3
     def print(self):
         print("Current mA:",self.getCurrent())
         print("Voltage mV:",self.getVoltage())
