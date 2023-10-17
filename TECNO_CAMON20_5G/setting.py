@@ -1,7 +1,25 @@
+"""IP Address Setting"""
 PHINE_IP = "172.16.101.79"
 PHINE_PORT = 5555
 
 SERVER_IP="127.0.0.1"
 SERVER_PORT=8702
 
+"""Train Setting"""
 EXPERIMENT_TIME=2000
+ACTION_SPACE = 16*40
+CLOCK_CHANGE__TIME = 30
+CLOCK_CHANGE__LIMIT = 1000
+GPU_POWER_LIMIT=1600
+# clock_change_time=30
+# cpu_power_limit=1000
+# gpu_power_limit=1600
+
+"""Targe Setting"""
+TARGET_FPS = 50
+TARGET_TEMP = 50
+TARGET_APP = "com.tencent.ig"
+# TARGET_APP = "org.videolan.vlc"
+
+"""Other"""
+CSV_PATH = f"./{TARGET_APP}_{TARGET_FPS}_{TARGET_TEMP}_{EXPERIMENT_TIME}.csv"
