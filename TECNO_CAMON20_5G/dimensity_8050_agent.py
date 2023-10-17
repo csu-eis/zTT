@@ -227,14 +227,16 @@ def load_agent(PICKLE_PATH):
     f = open(PICKLE_PATH, 'rb')
     object = pickle.load(f)
     print("load object from disk")
+    f.close()
     return object 
 
      
 if __name__=="__main__":
     os.makedirs("save_model/",exist_ok=True)
-    agent = DQNAgent(7,action_space)
+    # agent = DQNAgent(7,action_space)
+    
     agent = DQNAgent(7,action_space,load_model=True,weights="save_model/model.h5")
-    #agent = load_agent(PICKLE_PATH)
+    # agent = load_agent(PICKLE_PATH)
     scores, episodes = [], []
 
     t=1
@@ -364,7 +366,7 @@ if __name__=="__main__":
                 c_c=agent.clk_action_list[action][0]
                 g_c=agent.clk_action_list[action][1]
 #            持久化agent
-#            save_agent(agent,PICKLE_PATH)
+            
 
 
             # else:
@@ -419,10 +421,14 @@ if __name__=="__main__":
                 agent.model.save_weights("save_model/model.h5")
                 print("[Save model]")
             if t==experiment_time:
+                
+                save_agent(agent,PICKLE_PATH)
+                print("save agent to disk")
                 break
 
     finally:
         server_socket.close()
+    
     print(reward_tmp)
     ts = range(0, len(avg_q_max_data))
     plt.figure(1)
@@ -433,7 +439,9 @@ if __name__=="__main__":
     plt.legend(loc='upper left')
     plt.title('Average max-Q')
     plt.show()
-    plt.savefig("tmp/p.png")
+    plt.savefig("./p.png")
+    
+    
 
     
 
