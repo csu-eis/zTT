@@ -16,7 +16,7 @@ GPU_POWER_LIMIT=1600
 # gpu_power_limit=1600
 
 """Targe Setting"""
-TARGET_FPS = 60
+TARGET_FPS = 30
 TARGET_TEMP = 70
 #TARGET_APP = "com.tencent.ig"
 # TARGET_APP = "org.videolan.vlc"

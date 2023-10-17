@@ -211,10 +211,10 @@ def get_reward(fps, power, target_fps, c_t, g_t, c_t_s, g_t_s, beta):
 
 	w = get_w(c_t,c_t_s) + get_w(g_t,g_t_s)
 
-	if fps>=target_fps:
-		u=1
-	else :
-		u=math.exp(-abs((fps-target_fps))*0.01)
+	# if fps>=target_fps:
+	# 	u=1
+	# else :
+	u=math.exp(-abs((fps-target_fps))*0.01)
 	return u
 	
 if __name__=="__main__":
@@ -250,7 +250,7 @@ if __name__=="__main__":
 	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	server_socket.bind(("", PORT))
 	server_socket.listen(5)
-
+	is_training = True
 	try:
 		client_socket, address = server_socket.accept()
 		fig = plt.figure(figsize=(6,7))
@@ -314,38 +314,47 @@ if __name__=="__main__":
 			state=next_state
 
 			
-			if c_t>=target_temp:
-       			# cool down atction 随便找一个比当前挡位低的level
-				c_c=int(random.randint(int(c_c),16-1))
-				g_c=int(random.randint(int(g_c),40-1))
-				action = c_c * 40 + g_c
-			elif target_temp-c_t>=3:
-				if fps<target_fps:
-					if np.random.rand() <= 0.3:
-						print('previous clock : {} {}'.format(c_c,g_c))
-						# NOTE CHECK THESE
-						c_c=int(random.randint(0,int(c_c)))
-						g_c=int(random.randint(0,int(g_c)))
+			# if c_t>=target_temp:
+       		# 	# cool down atction 随便找一个比当前挡位低的level
+			# 	c_c=int(random.randint(int(c_c),16-1))
+			# 	g_c=int(random.randint(int(g_c),40-1))
+			# 	action = c_c * 40 + g_c
+			# if target_temp-c_t>=3:
+			if is_training:
+				if np.random.rand() <= 0.5 and fps<target_fps:
+					print('previous clock : {} {}'.format(c_c,g_c))
+					# NOTE CHECK THESE
+					c_c=int(random.randint(0,int(c_c)))
+					g_c=int(random.randint(0,int(g_c)))
 
-						print('explore higher clock@@@@@  {} {}'.format(c_c,g_c))
-						action = c_c * 40 + g_c
+					print('explore higher clock@@@@@  {} {}'.format(c_c,g_c))
+					action = c_c * 40 + g_c
 
-						# action=3*int(c_c/3)+int(g_c)-1
-					else:
-						action=agent.get_action(state)
-						c_c=agent.clk_action_list[action][0]
-						g_c=agent.clk_action_list[action][1]
+					# action=3*int(c_c/3)+int(g_c)-1
+				elif np.random.rand() <= 0.5 and fps>target_fps:
+					print('previous clock : {} {}'.format(c_c,g_c))
+					# NOTE CHECK THESE
+					c_c=int(random.randint(int(c_c),16))
+					g_c=int(random.randint(int(g_c),40))
+
+					print('explore lower clock@@@@@  {} {}'.format(c_c,g_c))
+					action = c_c * 40 + g_c
 				else:
+					
 					action=agent.get_action(state)
 					c_c=agent.clk_action_list[action][0]
 					g_c=agent.clk_action_list[action][1]
-
-
-
 			else:
 				action=agent.get_action(state)
 				c_c=agent.clk_action_list[action][0]
-				g_c=agent.clk_action_list[action][1]	
+				g_c=agent.clk_action_list[action][1]
+
+
+
+			# else:
+			# 	action=agent.get_action(state)
+			# 	c_c=agent.clk_action_list[action][0]
+			# 	g_c=agent.clk_action_list[action][1]	
 
 
 				# do action(one step)

@@ -137,7 +137,7 @@ if __name__=="__main__":
     time.sleep(4)
 
     print("Start learning")
-    iter = 15
+    iter = 0
     for t in range(experiment_time) :
         fps = float(sf_fps_driver.get_fps())
         if fps > 60:
@@ -156,7 +156,7 @@ if __name__=="__main__":
         # 
         
 
-        if iter>=15:
+        if iter>=4:
             next_state=(c_c, g_c, np.average(np.asanyarray(c_p)), np.average(np.asanyarray(g_p)), np.average(np.asanyarray(c_t)), np.average(np.asanyarray(g_t)), np.average(np.asanyarray(fps)))
             # c_c: CPU clock g_c: GPU cock c_p: power g_p: ? c_t: CPU_temp g_t :gpu_temp fps
             send_msg=str(c_c)+','+str(g_c)+','+str(np.average(np.asanyarray(c_p)))+','+str( np.average(np.asanyarray(g_p)))+','+str(np.average(np.asanyarray(c_t)))+','+str(np.average(np.asanyarray(g_t)))+','+str(np.average(np.asanyarray(fps)))
