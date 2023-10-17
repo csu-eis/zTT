@@ -120,7 +120,6 @@ if __name__=="__main__":
     
     # sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword="org.videolan.vlc")
     sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword=TARGET_APP)
-    
     fps_data=[]
     c_c=8
     g_c=3

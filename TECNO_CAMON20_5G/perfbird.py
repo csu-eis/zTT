@@ -14,4 +14,4 @@ if __name__ == "__main__" :
     power = PowerLogger(PHINE_IP,PHINE_PORT)
     sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword=TARGET_APP)
     while 1:
-        print("cpu0 clock: ",cpu0.getCPUclock() ,"cpu4 clock: ",cpu4.getCPUclock() ,"cpu7 clock: ",cpu4.getCPUclock(),"cpu temp",cpu0.getCPUtemp(),"fsp",sf_fps_driver.get_fps(),"power" ,power.getPower())
+        print("cpu0 clock: ",cpu0.getCPUclock() ,"cpu4 clock: ",cpu4.getCPUclock() ,"cpu7 clock: ",cpu4.getCPUclock(),"cpu temp",cpu0.getCPUtemp(),"fsp ",sf_fps_driver.get_fps(),"power " ,power.getPower())
