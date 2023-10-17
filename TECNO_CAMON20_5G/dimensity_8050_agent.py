@@ -26,13 +26,10 @@ with warnings.catch_warnings():
 
 PORT = SERVER_PORT
 experiment_time=EXPERIMENT_TIME #14100
-# clock_change_time=30
-# cpu_power_limit=1000
-# gpu_power_limit=1600
 action_space=ACTION_SPACE
 target_fps=TARGET_FPS
 target_temp=TARGET_TEMP
-beta=2 #4
+beta= 2 #4
 
 config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth=True
@@ -64,16 +61,15 @@ class DQNAgent:
 		self.epsilon_decay=0.08 # 0.99
 		self.epsilon_min = 0 # 0.1
 		self.epsilon_start, self.epsilon_end = 1.0, 0.0 # 1.0, 0.1
-#		self.exploration_steps = 500
-#		self.epsilon_decay_step = (self.epsilon_start - self.epsilon_end) / self.exploration_steps
+
 		self.batch_size = 4
 		self.train_start = 4 #200
-#		self.update_target_rate = 10000
+
 		self.q_max=0
 		self.avg_q_max=0
 		self.currentLoss=0
 		# Replay memory (=500)
-		self.memory = deque(maxlen=8)
+		self.memory = deque(maxlen=64)
 #		self.no_op_steps = 30
 		# model initialization
 		self.model = self.build_model()
@@ -203,29 +199,28 @@ class DQNAgent:
 
 
 def get_w(t,t_s):
-    l_v = 1
+    l_v = 0.1
     if t < t_s:
         return l_v * math.tanh(t_s - t)
     else:
         return -10 * l_v
 
 def get_reward(fps, power, target_fps, c_t, g_t, c_t_s, g_t_s, beta):
-	v1=0
-	v2=0
 	print('power={}'.format(power))
-	u=max(1,fps/target_fps)
+	# u=max(1,fps/target_fps)
 
 	w = get_w(c_t,c_t_s) + get_w(g_t,g_t_s)
 
-	if fps>=target_fps:
-		u=1
-	else :
-		u=fps/target_fps
-	return u+w+beta/power
+	# if fps>=target_fps:
+	# 	u=1
+	# else :
+	u=math.exp(-abs((fps-target_fps))*0.01)
+	return u
 	
 if __name__=="__main__":
 	os.makedirs("save_model/",exist_ok=True)
 	agent = DQNAgent(7,action_space)
+	agent = DQNAgent(7,action_space,load_model=True,weights="save_model/model.h5")
 	scores, episodes = [], []
 
 	t=1
@@ -241,11 +236,11 @@ if __name__=="__main__":
 	cnt=0
 	c_c=16
 	g_c=40
-	c_t=37
-	g_t=37
+	c_t=60
+	g_t=60
 	# ac= 1
-	c_t_prev=37
-	g_t_prev=37
+	c_t_prev=60
+	g_t_prev=60
 	print("TCPServr Waiting on port 8702")
 	state=(3,3,20,27,40,40,30)
 	score=0
@@ -256,7 +251,7 @@ if __name__=="__main__":
 	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	server_socket.bind(("", PORT))
 	server_socket.listen(5)
-
+	is_training = True
 	try:
 		client_socket, address = server_socket.accept()
 		fig = plt.figure(figsize=(6,7))
@@ -277,8 +272,8 @@ if __name__=="__main__":
 			g_t_prev=g_t
 			c_c=int(state_tmp[0])
 			g_c=int(state_tmp[1])
-			c_p=int(state_tmp[2])
-			g_p=int(state_tmp[3])
+			c_p=float(state_tmp[2])
+			g_p=float(state_tmp[3])
 			c_t=float(state_tmp[4])
 			g_t=float(state_tmp[5])
 			fps=float(state_tmp[6])
@@ -294,13 +289,7 @@ if __name__=="__main__":
 			avg_q_max_data.append(agent.avg_q_max)
 			loss_data.append(agent.currentLoss)
 
-			# reward
-			# reward = get_reward(fps, c_p+g_p, target_fps, c_t, g_t, target_temp, target_temp, beta)
-
-			# Handle dummy value at the first sensing
-			if (c_p+g_p<=0):
-				c_p=20
-				g_p=13
+		
 			reward = get_reward(fps, c_p+g_p, target_fps, c_t, g_t, target_temp, target_temp, beta)
 			reward_tmp.append(reward)
 			if(len(reward_tmp)>=300) :
@@ -326,37 +315,47 @@ if __name__=="__main__":
 			state=next_state
 
 			
-			if c_t>=target_temp:
-       			# cool down atction 随便找一个比当前挡位低的level
-				c_c=int(random.randint(int(c_c),16-1))
-				g_c=int(random.randint(int(g_c),40-1))
-				action = c_c * 40 + g_c
-			elif target_temp-c_t>=3:
-				if fps<target_fps:
-					if np.random.rand() <= 0.3:
-						print('previous clock : {} {}'.format(c_c,g_c))
-						# NOTE CHECK THESE
-						c_c=int(random.randint(0,int(c_c)))
-						g_c=int(random.randint(0,int(g_c)))
+			# if c_t>=target_temp:
+       		# 	# cool down atction 随便找一个比当前挡位低的level
+			# 	c_c=int(random.randint(int(c_c),16-1))
+			# 	g_c=int(random.randint(int(g_c),40-1))
+			# 	action = c_c * 40 + g_c
+			# if target_temp-c_t>=3:
+			if is_training:
+				if np.random.rand() <= 0.5 and fps<target_fps:
+					print('previous clock : {} {}'.format(c_c,g_c))
+					# NOTE CHECK THESE
+					c_c=int(random.randint(0,int(c_c)))
+					g_c=int(random.randint(0,int(g_c)))
 
-						print('explore higher clock@@@@@  {} {}'.format(c_c,g_c))
-						action = c_c * 40 + g_c
-						# action=3*int(c_c/3)+int(g_c)-1
-					else:
-						action=agent.get_action(state)
-						c_c=agent.clk_action_list[action][0]
-						g_c=agent.clk_action_list[action][1]
+					print('explore higher clock@@@@@  {} {}'.format(c_c,g_c))
+					action = c_c * 40 + g_c
+
+					# action=3*int(c_c/3)+int(g_c)-1
+				elif np.random.rand() <= 0.5 and fps>target_fps:
+					print('previous clock : {} {}'.format(c_c,g_c))
+					# NOTE CHECK THESE
+					c_c=int(random.randint(int(c_c),16))
+					g_c=int(random.randint(int(g_c),40))
+
+					print('explore lower clock@@@@@  {} {}'.format(c_c,g_c))
+					action = c_c * 40 + g_c
 				else:
+					
 					action=agent.get_action(state)
 					c_c=agent.clk_action_list[action][0]
 					g_c=agent.clk_action_list[action][1]
-
-
-
 			else:
 				action=agent.get_action(state)
 				c_c=agent.clk_action_list[action][0]
-				g_c=agent.clk_action_list[action][1]	
+				g_c=agent.clk_action_list[action][1]
+
+
+
+			# else:
+			# 	action=agent.get_action(state)
+			# 	c_c=agent.clk_action_list[action][0]
+			# 	g_c=agent.clk_action_list[action][1]	
 
 
 				# do action(one step)
