@@ -5,3 +5,4 @@ __pycache__
 fps.py
 tmp/
 *.h5
+*.txt
