@@ -214,8 +214,13 @@ def get_reward(fps, power, target_fps, c_t, g_t, c_t_s, g_t_s, beta):
     # if fps>=target_fps:
     # 	u=1
     # else :
-    u=math.exp(-abs((fps-target_fps))*0.01)
-    return u
+    
+    if fps > target_fps :
+        P = -1*power/4500 * (fps - target_fps)/20
+    else :
+        P = 0
+    u=math.exp(-abs((fps-target_fps))*0.01 + P)
+    return u+beta/power
    
 def save_agent(anget,PICKLE_PATH):
     f = open(PICKLE_PATH, 'wb')
