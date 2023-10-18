@@ -6,11 +6,12 @@ SERVER_IP="127.0.0.1"
 SERVER_PORT=8702
 
 """Train Setting"""
-EXPERIMENT_TIME=2000
+EXPERIMENT_TIME=500
 ACTION_SPACE = 16*40
 CLOCK_CHANGE__TIME = 30
 CLOCK_CHANGE__LIMIT = 1000
 GPU_POWER_LIMIT=1600
+PICKLE_PATH = "./save_model/agent.data"
 # clock_change_time=30
 # cpu_power_limit=1000
 # gpu_power_limit=1600

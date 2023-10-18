@@ -84,19 +84,25 @@ class CPU:
    
         commad = f'adb -s {self.ip} shell "echo userspace > /sys/devices/system/cpu/cpufreq/{cpu_policy[self.idx]}/scaling_governor" '
         subprocess.check_output(commad)
-
-    def setdefault(self, mode):
-        commad = f'adb -s {self.ip} shell "echo {mode} > /sys/devices/system/cpu/cpufreq/{cpu_policy[self.idx]}/scaling_governor" '
+    @staticmethod
+    def setgovernor(mode = "schedutil"):
+        for i in [0,4,7]:
+            commad = f'adb -s {PHINE_IP}:{PHINE_PORT} shell "echo {mode} > /sys/devices/system/cpu/cpufreq/policy{i}/scaling_governor" '
+            subprocess.check_output(commad)
+    
+    @staticmethod
+    def setdefault():
+        commad = f'adb -s {PHINE_IP}:{PHINE_PORT} shell "echo -1 -1 -1 > /proc/ppm/policy/ut_fix_freq_idx"'
         subprocess.check_output(commad)
-
+        CPU.setgovernor()
 if __name__ == "__main__":
     print("main start \n")
     cpucontrel0 = CPU(0,'5',PHINE_IP,PHINE_PORT)
     cpucontrel4 = CPU(4,'5',PHINE_IP,PHINE_PORT)
     cpucontrel7 = CPU(7,'5',PHINE_IP,PHINE_PORT)
-    cpucontrel0.setCPUclock(0)
-    cpucontrel4.setCPUclock(0)
-    cpucontrel7.setCPUclock(0)
+    cpucontrel0.setCPUclock(7)
+    cpucontrel4.setCPUclock(7)
+    cpucontrel7.setCPUclock(7)
     # cpucontrel0.getCPUtemp()
     # # cpucontrel0.getCPUclock(5)
     # cpucontrel0.collectdata()
@@ -104,3 +110,4 @@ if __name__ == "__main__":
     # cpucontrel7.collectdata()
     # cpucontrel7.setUserspace()
     # cpucontrel4.setUserspace()
+    # CPU.setdefault()

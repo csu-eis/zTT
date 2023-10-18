@@ -24,3 +24,7 @@ https://github.com/ztt-21/zTT
 
 # 参数设置
 在文件夹下 setting.py文件中
+# todo
+1. save memroy 对象持久化
+2. 测试自动dvfs s 和ztt对比
+   
