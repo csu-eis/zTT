@@ -69,11 +69,11 @@ if __name__=="__main__":
 
     agent = DQN_AGENT_AB(s_dim=9,h_dim=8,branches=[16,16,16,40],buffer_size=16000,params=None)
     agent.load_model("save_model/")
-    iter = 16
-    scores, episodes = [], []
+    train_start = 16
+    # scores, episodes = [], []
 
     t=1
-    learn=1
+
     ts=[]
     fps_data=[]
     power_data=[]
@@ -139,7 +139,7 @@ if __name__=="__main__":
 
             
             if is_training:
-                if len(agent.mem) >= iter:
+                if len(agent.mem) >= train_start:
                     agent.train(1,4,16)
                 if np.random.rand() <= 0.5 and fps<target_fps:
                     print('previous clock : {} {}'.format(c_c,g_c))
@@ -187,7 +187,7 @@ if __name__=="__main__":
             
             
             ax1.plot(ts, fps_data, linewidth=1, color='red')
-            ax1.axhline(y=target_fps, xmin=0, xmax=2000)
+            ax1.axhline(y=target_fps, xmin=0, xmax=1000)
             ax1.set_title('Frame rate (Target fps = 60) ')
             ax1.set_ylabel('Frame rate (fps)')
             ax1.set_xlabel('Time (s) ')
