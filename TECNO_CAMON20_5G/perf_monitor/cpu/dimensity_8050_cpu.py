@@ -53,6 +53,12 @@ class CPU:
         print(self.idx,commad)
         subprocess.check_output(commad)
 
+    def setCPUsclock(self,numbers):
+    
+        commad = f'adb -s {self.ip} shell "echo {numbers[0]} {numbers[1]} {numbers[2]} > /proc/ppm/policy/ut_fix_freq_idx"'
+        print(self.idx,commad)
+        subprocess.check_output(commad)
+
         
     def getCPUtemp(self):
         fname="/sys/class/thermal/thermal_zone4/temp  "

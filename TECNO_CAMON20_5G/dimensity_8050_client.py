@@ -117,7 +117,7 @@ if __name__=="__main__":
     c7=CPU(7, cpu_type='b', ip=PHINE_IP, port=PHINE_PORT)
     g=GPU(PHINE_IP,PHINE_PORT)
     pl=PowerLogger(PHINE_IP,PHINE_PORT)
-    set_screen_light(PHINE_IP,PHINE_PORT,80)
+    
     # sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword="org.videolan.vlc")
     sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword=TARGET_APP)
     fps_data=[]
@@ -155,7 +155,7 @@ if __name__=="__main__":
         g_t.append(float(g.getGPUtemp()))
         g_p.append(0)
         # 
-        
+        set_screen_light(PHINE_IP,PHINE_PORT,80)
 
         if iter>=5:
             next_state=(c_c0,c_c4,c_c7, g_c, np.average(np.asanyarray(c_p)), np.average(np.asanyarray(g_p)), np.average(np.asanyarray(c_t)), np.average(np.asanyarray(g_t)), np.average(np.asanyarray(fps)))
@@ -176,9 +176,9 @@ if __name__=="__main__":
             c_c7=int(clk[2])
             g_c=int(clk[3])
 
-            c0.setCPUclock(c_c0)
-            c4.setCPUclock(c_c4)
-            c7.setCPUclock(c_c7)
+            c0.setCPUsclock([c_c0,c_c4,c_c7])
+            # c4.setCPUclock(c_c4)
+            # c7.setCPUclock(c_c7)
             g.setGPUclock(g_c)
             iter=0
             time.sleep(0.4)
