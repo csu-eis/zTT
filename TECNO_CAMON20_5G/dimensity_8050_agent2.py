@@ -13,18 +13,10 @@ import sys
 import torch
 from torch import nn
 from setting import *
-with warnings.catch_warnings():  
-    warnings.filterwarnings("ignore",category=FutureWarning)
-    from tensorflow.python.keras import backend as K
-    from collections import defaultdict
-    from keras.models import Sequential
-    from keras.optimizers import Adam
-    from keras.layers import Dense
-    from collections import deque
-    import tensorflow as tf
-    import matplotlib.pyplot as plt
-    from tensorflow.python.keras import optimizers
-    
+
+from models.dqn_model import DQN_AGENT_AB
+import matplotlib.pyplot as plt
+
 
 PORT = SERVER_PORT
 experiment_time=EXPERIMENT_TIME #14100
@@ -35,205 +27,7 @@ beta= 2 #4
 
 
 
-# config = tf.compat.v1.ConfigProto()
-# config.gpu_options.allow_growth=True
-# sess = tf.compat.v1.Session(config=config)
-# K.set_session(sess)
 
-class DQN_AB(nn.Module):
-    def __init__(self, s_dim=10, h_dim=25, branches=[1,2,3]):
-        super(DQN_AB, self).__init__()
-        self.s_dim, self.h_dim = s_dim, h_dim
-        self.branches = branches
-        self.shared = nn.Sequential(nn.Linear(self.s_dim, self.h_dim), nn.ReLU())
-        self.shared_state = nn.Sequential(nn.Linear(self.h_dim, self.h_dim), nn.ReLU())
-        self.domains, self.outputs = [], []
-        for i in range(len(branches)):
-            layer = nn.Sequential(nn.Linear(self.h_dim, self.h_dim), nn.ReLU())
-            self.domains.append(layer)
-            layer_out = nn.Sequential(nn.Linear(self.h_dim*2, branches[i]))
-            self.outputs.append(layer_out)
-    def forward(self, x):
-        # return list of tensors, each element is Q-Values of a domain
-        f = self.shared(x)
-        s = self.shared_state(f)
-        outputs = []
-        for i in range(len(self.branches)):
-            branch = self.domains[i](f)
-            branch = torch.cat([branch,s],dim=0)
-            outputs.append(self.outputs[i](branch))
-        return outputs
-    
-
-class DQNAgent:
-    def __init__(self, state_size, action_size,load_model=False,weights=""):
-        self.load_model = load_model
-        self.training=0
-        self.state_size=state_size
-        # self.action_size=[]
-        
-          # TODO 改动一下action数量
-        # self.actions=list(range(action_space))
-        # self.q_table=defaultdict(lambda:[0.0 for i in range(action_space)])
-        # self.clk_action_list=[]
-  
-        # for i in range(16):
-        #     for j in range(40):
-        #         clk_action=(i,j)
-        #         self.clk_action_list.append(clk_action)
-        # TODO 改动一下action数量
-    
-        # Hyperparameter
-        self.learning_rate=0.05    # 0.01
-        self.discount_factor=0.99
-        self.epsilon=1
-        self.epsilon_decay=0.08 # 0.99
-        self.epsilon_min = 0 # 0.1
-        self.epsilon_start, self.epsilon_end = 1.0, 0.0 # 1.0, 0.1
-
-        self.batch_size = 4
-        self.train_start = 4#200
-
-        self.q_max=0
-        self.avg_q_max=0
-        self.currentLoss=0
-        # Replay memory (=500)
-        self.memory = deque(maxlen=64)
-#		self.no_op_steps = 30
-        # model initialization
-        self.model = self.build_model()
-        self.target_model = self.build_model()
-        self.update_target_model()
-        if self.load_model:
-            # self.model.load_weights("./save_model/model.h5")
-            # weights = torch.load("./save_model/model.pth")
-            # self.model.load_
-            self.epsilon_start = 0.1
-        
-        self.optimizer = torch.optim.RMSprop(self.model.parameters())
-        self.criterion = nn.SmoothL1Loss() # Huber loss
-
-    
-    def build_model(self):
-        model = DQN_AB(self.state_size,8,[16,16,16,40])
-        # model = Sequential()
-        # model.add(Dense(6, input_dim=self.state_size, activation='relu', kernel_initializer='normal'))
-        # model.add(Dense(6, activation='relu', kernel_initializer='normal'))
-        # model.add(Dense(self.action_size, activation='linear', kernel_initializer='normal'))
-        # model.summary()
-        # model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
-        
-        return model
-
-    def update_target_model(self):
-        # self.policy_net.load_state_dict(checkpoint['model_state_dict'])
-		# self.target_net.load_state_dict(checkpoint['model_state_dict'])
-        self.target_model.load_state_dict(self.model.state_dict())
-    
-    def get_action(self, state):
-        state=torch.tensor(state,dtype=torch.float32)
-        #print('state={}'.format(state))
-        if np.random.rand() <= self.epsilon:
-            q_values=self.model(state)
-            print('state={}, action=exploration, epsilon={}'.format(state[0], self.epsilon))
-            return [random.randrange(16),random.randrange(16),random.randrange(16),random.randrange(40)]
-        else:
-            s = time.time()
-            q_values = self.model(state)
-            e = time.time()
-            action = []
-            for q_value in q_values:
-                action.append(torch.argmax(q_value[0]).item())
-            print('state={}, action={}, epsilon={}, lat={} ms'.format(state[0], action, self.epsilon,(e-s)*1000))
-            return action
-    
-    def append_sample(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done))
-
-    def train_model(self):
-        self.training=1
-
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
-        else:
-            self.epsilon = self.epsilon_min
-            
-
-        losses = []
-        self.target_model.train()
-        train_loader = torch.utils.data.DataLoader(
-            self.memory, shuffle=True, batch_size=self.batch_size, drop_last=True)
-        length = len(train_loader.dataset)
-        GAMMA = 1.0
-
-        # mini_batch = random.sample(self.memory, self.batch_size)
-
-        # states = np.zeros((self.batch_size, self.state_size))
-        # next_states = np.zeros((self.batch_size, self.state_size))
-        # actions, rewards, dones = [], [], []
-
-        # for i in range(self.batch_size):
-        #     states[i] = mini_batch[i][0]
-        #     actions.append(mini_batch[i][1])
-        #     rewards.append(mini_batch[i][2])
-        #     next_states[i] = mini_batch[i][3]
-        #     dones.append(mini_batch[i][4])
-        # Calcuate loss for each branch and then simply sum up
-        for i, trans in enumerate(train_loader):
-            loss = 0.0 # initialize loss at the beginning of each batch
-            states, actions, rewards,next_states,dones = trans
-            with torch.no_grad():
-                target_result = self.target_model(torch.tensor(next_states,dtype=torch.float32))
-            policy_result = self.model(torch.tensor(states,dtype=torch.float32))
-            # Loop through each action domain
-            for j in range(4):
-                next_state_values = target_result[j].max(dim=0)[0].detach()
-                expected_state_action_values = (next_state_values*GAMMA) + rewards.float()
-                # Gather action-values that have been taken
-                branch_actions = actions[j].long()
-                state_action_values = policy_result[j].gather(0, branch_actions)
-                loss += self.criterion(state_action_values, expected_state_action_values)
-            losses.append(loss.item())
-            self.optimizer.zero_grad()
-            loss.backward()
-            # if i>n_update:
-            #     break
-
-            self.optimizer.step()
-        return losses
-        
-
-
-        target = self.model.predict(states)
-        target_val = self.target_model.predict(next_states)
-
-
-        for i in range(self.batch_size):
-            if dones[i]:
-                target[i][actions[i]] = rewards[i]
-            else:
-                target[i][actions[i]] = rewards[i] + self.discount_factor * (np.amax(target_val[i]))
-
-        hist = self.model.fit(states, target, batch_size=self.batch_size, epochs=1, verbose=0)
-        self.currentLoss = hist.history['loss'][0]
-        print('loss = {}'.format(self.currentLoss))
-        self.training=0
-
-
-        return action
-    @staticmethod
-    def arg_max(state_action):
-        max_index_list=[]
-        max_value=state_action[0]
-        for index, value in enumerate(state_action):
-            if value > max_value:
-                max_index_list.clear()
-                max_value=value
-                max_index_list.append(index)
-            elif value==max_value:
-                max_index_list.append(index)
-        print('{}  {}'.format(max_index_list,max_value))
-        return random.choice(max_index_list)
 
     
 def get_w(t,t_s):
@@ -248,16 +42,12 @@ def get_reward(fps, power, target_fps, c_t, g_t, c_t_s, g_t_s, beta):
     # u=max(1,fps/target_fps)
 
     w = get_w(c_t,c_t_s) + get_w(g_t,g_t_s)
-
-    # if fps>=target_fps:
-    # 	u=1
-    # else :
     
     if fps > target_fps :
-        P = -1*power/4500 * (fps - target_fps)/20
+        p = -1*power/4500 * (fps - target_fps)/20
     else :
-        P = 0
-    u=math.exp(-abs((fps-target_fps))*0.01 + P)
+        p = 0
+    u=math.exp(-abs((fps-target_fps))*0.01)
     return u
    
 def save_agent(anget,PICKLE_PATH):
@@ -276,10 +66,10 @@ def load_agent(PICKLE_PATH):
      
 if __name__=="__main__":
     os.makedirs("save_model/",exist_ok=True)
-    # agent = DQNAgent(7,action_space)
-    
-    agent = DQNAgent(9,action_space,load_model=True,weights="save_model/model.h5")
-    # agent = load_agent(PICKLE_PATH)
+
+    agent = DQN_AGENT_AB(s_dim=9,h_dim=8,branches=[16,16,16,40],buffer_size=16000,params=None)
+    agent.load_model("save_model/")
+    iter = 16
     scores, episodes = [], []
 
     t=1
@@ -287,30 +77,25 @@ if __name__=="__main__":
     ts=[]
     fps_data=[]
     power_data=[]
-    avg_q_max_data=[]
-    loss_data = []
-    avg_reward=[]
-    reward_tmp=[]
+
 
     cnt=0
     c_c=16
     g_c=40
     c_t=60
     g_t=60
-    # ac= 1
-    c_t_prev=60
-    g_t_prev=60
+
     print("TCPServr Waiting on port 8702")
-    state=(3,3,3,3,20,27,40,40,30)
+    prev_state=np.asanyarray([3,3,3,3,20,27,40,40,30],dtype=np.float32)
     score=0
-    action=[0,0,0,0]
+    action=(0,0,0,0)
     copy=1
 
-    clk=11
+    
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(("", PORT))
     server_socket.listen(5)
-    is_training = False
+    is_training = True
     try:
         client_socket, address = server_socket.accept()
         fig = plt.figure(figsize=(6,7))
@@ -327,8 +112,7 @@ if __name__=="__main__":
             if not msg:
                 print('No receiveddata')
                 break
-            c_t_prev=c_t
-            g_t_prev=g_t
+
             c_c0 = int(state_tmp[0])
             c_c4 = int(state_tmp[1])
             c_c7 = int(state_tmp[2])
@@ -339,45 +123,24 @@ if __name__=="__main__":
             g_t=float(state_tmp[7])
             fps=float(state_tmp[8])
 
-            ts.append(t)
-            fps_data.append(fps)
-            power_data.append((c_p+g_p)*100)
-            
-            # 根据next state预测出q max值
-            next_state=(c_c0,c_c4,c_c7, g_c, c_p, g_p, c_t, g_t,fps)
-            q_values = agent.model(torch.tensor(next_state,dtype=torch.float32))
-            agent.q_max=[torch.amax(q) for q in q_values]
-            # agent.avg_q_max=agent.q_max/4
-            avg_q_max_data.append(0)
-            loss_data.append(0)
-
-        
+            curr_state=np.asanyarray([c_c0,c_c4,c_c7, g_c, c_p, g_p, c_t, g_t,fps],dtype=np.float32)
             reward = get_reward(fps, c_p+g_p, target_fps, c_t, g_t, target_temp, target_temp, beta)
-            reward_tmp.append(reward)
-            if(len(reward_tmp)>=300) :
-                reward_tmp.pop(0)
-
-            done = 1
+        
             # replay memory
-            agent.append_sample(state, action, reward, next_state, done)
-            for i in range(copy):
-                if reward<0:
-                    agent.append_sample(state, action, reward, next_state, done)
-                if reward>1:
-                    agent.append_sample(state, action, reward, next_state, done)
+            agent.mem.push(prev_state, action,curr_state, reward)
 
-            print('[{}] state:{} action:{} next_state:{} reward:{} fps:{}, avg_q={}'.format(t, state,action,next_state,reward,fps,agent.avg_q_max))
-            if len(agent.memory) >= agent.train_start:
-                agent.train_model()
-#				print(agent.get_flops(agent.model)) 
-            score += reward
-            avg_reward.append(sum(reward_tmp) / len(reward_tmp))
-            #print('q:{}'.format(agent.q_table[next_state]))
-            # get action
-            state=next_state
+            print('[{}] state:{}, action:{}, next_state:{}, reward:{}, fps:{}'.format(t, prev_state,action,curr_state,reward,fps))
+            fps_data.append(fps)
+            power_data.append(c_p+g_p)
+            ts.append(t)
+            
+#			
+            prev_state=curr_state
 
             
             if is_training:
+                if len(agent.mem) >= iter:
+                    agent.train(1,4,16)
                 if np.random.rand() <= 0.5 and fps<target_fps:
                     print('previous clock : {} {}'.format(c_c,g_c))
                     # NOTE CHECK THESE
@@ -400,34 +163,29 @@ if __name__=="__main__":
                     c_c7=int(random.randint(int(c_c7),15))
                     g_c=int(random.randint(int(g_c),39))
 
-                    print('explore lower clock@@@@@  {} {}'.format(c_c,g_c))
+                    print('explore lower clock@@@@@  {} {}'.format(c_c0,g_c))
+                    print('explore lower clock@@@@@  {} {}'.format(c_c4,g_c))
+                    print('explore lower clock@@@@@  {} {}'.format(c_c7,g_c))
                     action = (c_c0,c_c4,c_c7,g_c)
                 else:
                     
-                    action=agent.get_action(state)
+                    action=agent.max_action(torch.from_numpy(curr_state))
                     c_c0=action[0]
                     c_c4=action[1]
                     c_c7=action[2]
                     g_c=action[3]
             else:
-                action=agent.get_action(state)
+                action=agent.max_action(torch.from_numpy(curr_state))
                 c_c0=action[0]
                 c_c4=action[1]
                 c_c7=action[2]
                 g_c=action[3]
-#            持久化agent
-            
 
-
-            # else:
-            # 	action=agent.get_action(state)
-            # 	c_c=agent.clk_action_list[action][0]
-            # 	g_c=agent.clk_action_list[action][1]	
-
-
-                # do action(one step)
             send_msg=str(c_c0)+','+str(c_c4)+','+str(c_c7)+','+str(g_c)
             client_socket.send(send_msg.encode())
+            
+            
+            
             ax1.plot(ts, fps_data, linewidth=1, color='pink')
             ax1.axhline(y=target_fps, xmin=0, xmax=2000)
             ax1.set_title('Frame rate (Target fps = 60) ')
@@ -445,51 +203,44 @@ if __name__=="__main__":
             ax2.set_xlabel('Time (s) ')
             ax2.grid(True)
             
-            ax3.plot(ts, avg_q_max_data, linewidth=1, color='orange')
-            ax3.set_ylabel('Q-value')
-            ax3.set_xticks([0, 500, 1000, 1500, 2000])
-            ax3.set_xlabel('Time (s) ')
-            ax3.grid(True)
+            # ax3.plot(ts, avg_q_max_data, linewidth=1, color='orange')
+            # ax3.set_ylabel('Q-value')
+            # ax3.set_xticks([0, 500, 1000, 1500, 2000])
+            # ax3.set_xlabel('Time (s) ')
+            # ax3.grid(True)
             
-            ax4.plot(ts, loss_data, linewidth=1, color='black')
-            ax4.set_ylabel('Average loss')
-            ax2.set_yticks([0, 2000, 4000, 6000, 8000])
-            ax4.set_xticks([0, 500, 1000, 1500, 2000])
-            ax4.set_xlabel('Time (s) ')
-            ax4.grid(True)
-            plt.tight_layout()
-            plt.pause(0.1)
+            # ax4.plot(ts, loss_data, linewidth=1, color='black')
+            # ax4.set_ylabel('Average loss')
+            # ax2.set_yticks([0, 2000, 4000, 6000, 8000])
+            # ax4.set_xticks([0, 500, 1000, 1500, 2000])
+            # ax4.set_xlabel('Time (s) ')
+            # ax4.grid(True)
+            # plt.tight_layout()
+            # plt.show()
+            # plt.pause(0.1)
 
 
-            if done:
-                agent.update_target_model()
             t=t+1
-            if t%60 == 0:
-                agent.learning_rate=0.1
-                print('[Reset learning_rate]')
+
             if t%10 == 0:
-                agent.model.save_weights("save_model/model.h5")
+                agent.save_model(t%10 ,"save_model/")
                 print("[Save model]")
-            if t==experiment_time:
-                
-                save_agent(agent,PICKLE_PATH)
-                print("save agent to disk")
-                break
+
 
     finally:
         server_socket.close()
     
-    print(reward_tmp)
-    ts = range(0, len(avg_q_max_data))
-    plt.figure(1)
-    plt.xlabel('time')
-    plt.ylabel('Avg Q-max')
-    plt.grid(True)
-    plt.plot(ts,avg_q_max_data, label='avg_q_max')
-    plt.legend(loc='upper left')
-    plt.title('Average max-Q')
-    plt.show()
-    plt.savefig("./p.png")
+    # print(reward_tmp)
+    # ts = range(0, len(avg_q_max_data))
+    # plt.figure(1)
+    # plt.xlabel('time')
+    # plt.ylabel('Avg Q-max')
+    # plt.grid(True)
+    # plt.plot(ts,avg_q_max_data, label='avg_q_max')
+    # plt.legend(loc='upper left')
+    # plt.title('Average max-Q')
+    # plt.show()
+    # plt.savefig("./p.png")
     
     
 

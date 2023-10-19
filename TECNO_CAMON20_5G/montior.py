@@ -2,7 +2,8 @@ import subprocess
 import re
 import matplotlib.pyplot as plt
 from setting import *
-from SurfaceFlinger.get_fps import SurfaceFlingerFPS
+from perf_monitor.surfaceflinger.fps import SurfaceFlingerFPS
+from perf_monitor.power.dimensity_8050_power import PowerLogger
 # 创建两个空的列表来存储数据
 time_data = []
 current_usage_data = []
@@ -29,7 +30,7 @@ plt.grid(True)
 
 
 
-from PowerLogger.dimensity_8050_power import PowerLogger
+
 power = PowerLogger(PHINE_IP,PHINE_PORT)
 time = 1
 time_window = 420

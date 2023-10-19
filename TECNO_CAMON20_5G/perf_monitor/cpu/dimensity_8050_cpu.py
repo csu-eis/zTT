@@ -2,7 +2,7 @@ import subprocess
 import re
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__))+"/..")
+sys.path.append(os.path.dirname(os.path.abspath(__file__))+"/../..")
 from setting import PHINE_IP,PHINE_PORT
 little_cpu_clock_list = [2000000 ,1800000, 1725000, 1625000, 1525000, 1450000, 1350000, 1250000, 1075000 ,1000000, 925000, 850000, 750000, 675000, 600000, 500000]
 middle_cpu_clock_list = [2600000, 2507000, 2354000, 2200000, 1985000, 1855000, 1740000, 1624000, 1537000, 1451000, 1335000, 1162000, 1046000, 902000, 700000, 437000]

@@ -11,10 +11,10 @@ import struct
 import math
 import sys
 from setting import *
-from SurfaceFlinger.get_fps import SurfaceFlingerFPS
-from PowerLogger.dimensity_8050_power import PowerLogger
-from CPU.dimensity_8050_cpu import CPU
-from GPU.dimensity_8050_gpu import GPU
+from perf_monitor.surfaceflinger.fps import SurfaceFlingerFPS
+from perf_monitor.power.dimensity_8050_power import PowerLogger
+from perf_monitor.cpu.dimensity_8050_cpu import CPU
+from perf_monitor.gpu.dimensity_8050_gpu import GPU
 
 def save_csv(fps_data,c0,c4,c7,g,csv_path = CSV_PATH):
     pass
@@ -184,7 +184,7 @@ if __name__=="__main__":
             
             
         iter+=1
-        time.sleep(0.5)
+        # time.sleep(0.5)
 
     # Logging results
     print('Average Total power={} mW'.format(sum(pl.power_data)/len(pl.power_data)))

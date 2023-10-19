@@ -1,9 +1,9 @@
 # work in \TECNO_CAMON20_5G 
 import sys
-from SurfaceFlinger.get_fps import SurfaceFlingerFPS
-from PowerLogger.dimensity_8050_power import PowerLogger
-from CPU.dimensity_8050_cpu import CPU
-from GPU.dimensity_8050_gpu import GPU
+from perf_monitor.surfaceflinger.fps import SurfaceFlingerFPS
+from perf_monitor.power.dimensity_8050_power import PowerLogger
+from perf_monitor.cpu.dimensity_8050_cpu import CPU
+from perf_monitor.gpu.dimensity_8050_gpu import GPU
 from setting import *
 
 if __name__ == "__main__" :
