@@ -188,10 +188,10 @@ if __name__=="__main__":
             
             ax1.plot(ts, fps_data, linewidth=1, color='red')
             ax1.axhline(y=target_fps, xmin=0, xmax=1000)
-            ax1.set_title('Frame rate (Target fps = 60) ')
+            ax1.set_title(f'Frame rate (Target fps = {TARGET_FPS}) ')
             ax1.set_ylabel('Frame rate (fps)')
             ax1.set_xlabel('Time (s) ')
-            ax1.set_xticks([0, 500, 1000, 1500, 2000])
+            ax1.set_xticks([0, 200, 400, 600, 800,1000])
             ax1.set_yticks([15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65])
             ax1.grid(True)
 

@@ -11,7 +11,7 @@ import struct
 import math
 import sys
 from setting import *
-from perf_monitor.surfaceflinger.fps import SurfaceFlingerFPS
+from perf_monitor.surfaceflinger.fps import SurfaceFlingerFPS,set_screen_light
 from perf_monitor.power.dimensity_8050_power import PowerLogger
 from perf_monitor.cpu.dimensity_8050_cpu import CPU
 from perf_monitor.gpu.dimensity_8050_gpu import GPU
@@ -117,7 +117,7 @@ if __name__=="__main__":
     c7=CPU(7, cpu_type='b', ip=PHINE_IP, port=PHINE_PORT)
     g=GPU(PHINE_IP,PHINE_PORT)
     pl=PowerLogger(PHINE_IP,PHINE_PORT)
-    
+    set_screen_light(PHINE_IP,PHINE_PORT,80)
     # sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword="org.videolan.vlc")
     sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword=TARGET_APP)
     fps_data=[]
@@ -157,7 +157,7 @@ if __name__=="__main__":
         # 
         
 
-        if iter>=4:
+        if iter>=5:
             next_state=(c_c0,c_c4,c_c7, g_c, np.average(np.asanyarray(c_p)), np.average(np.asanyarray(g_p)), np.average(np.asanyarray(c_t)), np.average(np.asanyarray(g_t)), np.average(np.asanyarray(fps)))
             # c_c: CPU clock g_c: GPU cock c_p: power g_p: ? c_t: CPU_temp g_t :gpu_temp fps
             send_msg=str(c_c0)+','+str(c_c4)+','+str(c_c7)+','+str(g_c)+','+str(np.average(np.asanyarray(c_p)))+','+str( np.average(np.asanyarray(g_p)))+','+str(np.average(np.asanyarray(c_t)))+','+str(np.average(np.asanyarray(g_t)))+','+str(np.average(np.asanyarray(fps)))
@@ -181,7 +181,7 @@ if __name__=="__main__":
             c7.setCPUclock(c_c7)
             g.setGPUclock(g_c)
             iter=0
-            
+            time.sleep(0.4)
             
         iter+=1
         # time.sleep(0.5)
