@@ -99,10 +99,10 @@ if __name__=="__main__":
     try:
         client_socket, address = server_socket.accept()
         fig = plt.figure(figsize=(6,7))
-        ax1 = fig.add_subplot(4, 1, 1)
-        ax2 = fig.add_subplot(4, 1, 2)
-        ax3 = fig.add_subplot(4, 1, 3)
-        ax4 = fig.add_subplot(4, 1, 4)
+        ax1 = fig.add_subplot(2, 1, 1)
+        ax2 = fig.add_subplot(2, 1, 2)
+        # ax3 = fig.add_subplot(4, 1, 3)
+        # ax4 = fig.add_subplot(4, 1, 4)
 
         while t<experiment_time:
             # 获取到手机的state信息
@@ -186,7 +186,7 @@ if __name__=="__main__":
             
             
             
-            ax1.plot(ts, fps_data, linewidth=1, color='pink')
+            ax1.plot(ts, fps_data, linewidth=1, color='red')
             ax1.axhline(y=target_fps, xmin=0, xmax=2000)
             ax1.set_title('Frame rate (Target fps = 60) ')
             ax1.set_ylabel('Frame rate (fps)')
@@ -202,22 +202,9 @@ if __name__=="__main__":
             ax2.set_xticks([0, 250, 500, 750, 1000])
             ax2.set_xlabel('Time (s) ')
             ax2.grid(True)
-            
-            # ax3.plot(ts, avg_q_max_data, linewidth=1, color='orange')
-            # ax3.set_ylabel('Q-value')
-            # ax3.set_xticks([0, 500, 1000, 1500, 2000])
-            # ax3.set_xlabel('Time (s) ')
-            # ax3.grid(True)
-            
-            # ax4.plot(ts, loss_data, linewidth=1, color='black')
-            # ax4.set_ylabel('Average loss')
-            # ax2.set_yticks([0, 2000, 4000, 6000, 8000])
-            # ax4.set_xticks([0, 500, 1000, 1500, 2000])
-            # ax4.set_xlabel('Time (s) ')
-            # ax4.grid(True)
-            # plt.tight_layout()
-            # plt.show()
-            # plt.pause(0.1)
+            plt.tight_layout()
+            plt.pause(0.1)
+
 
 
             t=t+1
@@ -232,14 +219,14 @@ if __name__=="__main__":
     
     # print(reward_tmp)
     # ts = range(0, len(avg_q_max_data))
-    # plt.figure(1)
-    # plt.xlabel('time')
-    # plt.ylabel('Avg Q-max')
-    # plt.grid(True)
+    plt.figure(1)
+    plt.xlabel('time')
+    plt.ylabel('Avg Q-max')
+    plt.grid(True)
     # plt.plot(ts,avg_q_max_data, label='avg_q_max')
-    # plt.legend(loc='upper left')
-    # plt.title('Average max-Q')
-    # plt.show()
+    plt.legend(loc='upper left')
+    plt.title('Average max-Q')
+    plt.show()
     # plt.savefig("./p.png")
     
     
