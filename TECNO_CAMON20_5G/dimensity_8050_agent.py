@@ -95,24 +95,24 @@ class DQNAgent:
 # .... Define your model here ....
                 
     
-    # def optimizer(self):
-    #     a = K.placeholder(shape=(None,), dtype='int32')
-    #     y = K.placeholder(shape=(None,), dtype='float32')
-    #     prediction=self.model.output
+    def optimizer(self):
+        a = K.placeholder(shape=(None,), dtype='int32')
+        y = K.placeholder(shape=(None,), dtype='float32')
+        prediction=self.model.output
         
-    #     a_one_hot = K.one_hot(ac, self.action_size)
-    #     q_value = K.sum(prediction * a_one_hot, axis=1)
-    #     error = K.abs(y - q_value)
+        a_one_hot = K.one_hot(ac, self.action_size)
+        q_value = K.sum(prediction * a_one_hot, axis=1)
+        error = K.abs(y - q_value)
 
-    #     quadratic_part = K.clip(error, 0.0, 1.0)
-    #     linear_part = error - quadratic_part
-    #     loss = K.mean(0.5 * K.square(quadratic_part) + linear_part)
+        quadratic_part = K.clip(error, 0.0, 1.0)
+        linear_part = error - quadratic_part
+        loss = K.mean(0.5 * K.square(quadratic_part) + linear_part)
 
-    #     optimizer = optimizer.RMSprop(lr=0.00025, epsilon = 0.01)
-    #     updates = optimizer.get_updates(self.model.trainable_weights, [], loss)
-    #     train = K.function([self.model.input, a, y], [loss], updates=updates)
+        optimizer = optimizer.RMSprop(lr=0.00025, epsilon = 0.01)
+        updates = optimizer.get_updates(self.model.trainable_weights, [], loss)
+        train = K.function([self.model.input, a, y], [loss], updates=updates)
 
-    #     return train
+        return train
     
     def build_model(self):
         model = Sequential()
@@ -240,7 +240,7 @@ if __name__=="__main__":
     os.makedirs("save_model/",exist_ok=True)
     # agent = DQNAgent(7,action_space)
     
-    agent = DQNAgent(9,action_space,load_model=True,weights="save_model/model.h5")
+    agent = DQNAgent(7,action_space,load_model=False,weights="save_model/model.h5")
     # agent = load_agent(PICKLE_PATH)
     scores, episodes = [], []
 
@@ -291,22 +291,20 @@ if __name__=="__main__":
                 break
             c_t_prev=c_t
             g_t_prev=g_t
-            c_c0 = int(state_tmp[0])
-            c_c4 = int(state_tmp[1])
-            c_c7 = int(state_tmp[2])
-            g_c=int(state_tmp[3])
-            c_p=float(state_tmp[4])
-            g_p=float(state_tmp[5])
-            c_t=float(state_tmp[6])
-            g_t=float(state_tmp[7])
-            fps=float(state_tmp[8])
+            c_c=int(state_tmp[0])
+            g_c=int(state_tmp[1])
+            c_p=float(state_tmp[2])
+            g_p=float(state_tmp[3])
+            c_t=float(state_tmp[4])
+            g_t=float(state_tmp[5])
+            fps=float(state_tmp[6])
 
             ts.append(t)
             fps_data.append(fps)
             power_data.append((c_p+g_p)*100)
             
             # 根据next state预测出q max值
-            next_state=(c_c0,c_c4,c_c7, g_c, c_p, g_p, c_t, g_t,fps)
+            next_state=(c_c, g_c, c_p, g_p, c_t, g_t,fps)
             agent.q_max+=np.amax(agent.model.predict(np.array([next_state])))
             agent.avg_q_max=agent.q_max/(t)
             avg_q_max_data.append(agent.avg_q_max)
@@ -348,15 +346,11 @@ if __name__=="__main__":
                 if np.random.rand() <= 0.5 and fps<target_fps:
                     print('previous clock : {} {}'.format(c_c,g_c))
                     # NOTE CHECK THESE
-                    c_c0=int(random.randint(0,int(c_c0)))
-                    c_c4=int(random.randint(0,int(c_c4)))
-                    c_c7=int(random.randint(0,int(c_c7)))
+                    c_c=int(random.randint(0,int(c_c)))
                     g_c=int(random.randint(0,int(g_c)))
 
-                    print('explore higher clock@@@@@  {} {}'.format(c_c0,g_c))
-                    print('explore higher clock@@@@@  {} {}'.format(c_c4,g_c))
-                    print('explore higher clock@@@@@  {} {}'.format(c_c7,g_c))
-                    action = (c_c0,c_c4,c_c7,g_c)
+                    print('explore higher clock@@@@@  {} {}'.format(c_c,g_c))
+                    action = c_c * 40 + g_c
 
                     # action=3*int(c_c/3)+int(g_c)-1
                 elif np.random.rand() <= 0.5 and fps>target_fps:
@@ -455,7 +449,6 @@ if __name__=="__main__":
     
 
     
-
 
 
 

@@ -40,7 +40,7 @@ class DQN_AB(nn.Module):
         super(DQN_AB, self).__init__()
         self.s_dim, self.h_dim = s_dim, h_dim
         self.branches = branches
-        self.shared = nn.Sequential(nn.Linear(self.s_dim, self.h_dim), nn.ReLU())
+        self.shared = nn.Sequential(nn.Linear(self.s_dim, self.h_dim), nn.ReLU(),)
         self.shared_state = nn.Sequential(nn.Linear(self.h_dim, self.h_dim), nn.ReLU())
         self.domains, self.outputs = [], []
         for i in range(len(branches)):
@@ -48,7 +48,11 @@ class DQN_AB(nn.Module):
             self.domains.append(layer)
             layer_out = nn.Sequential(nn.Linear(self.h_dim*2, branches[i]))
             self.outputs.append(layer_out)
+        self.layer_norm = nn.LayerNorm(self.h_dim*2)
+        # self.bn = nn.LayerNorm(self.h_dim*2)
     def forward(self, x):
+        if len(x.shape)==1:
+            x= x.view(-1,self.s_dim)
         # return list of tensors, each element is Q-Values of a domain
         f = self.shared(x)
         s = self.shared_state(f)
@@ -56,12 +60,18 @@ class DQN_AB(nn.Module):
         for i in range(len(self.branches)):
             if len(x.shape)==1:
                 branch = self.domains[i](f)
-                branch = torch.cat([branch,s],dim=0)
-                outputs.append(self.outputs[i](branch))
+                branch = torch.cat([branch,s],dim=0).view(-1,self.h_dim*2)
+                out = self.layer_norm(branch)
+                out = self.outputs[i](out)
+                
+                outputs.append(out)
             else:
                 branch = self.domains[i](f)
                 branch = torch.cat([branch,s],dim=1)
-                outputs.append(self.outputs[i](branch))
+                out = self.layer_norm(branch)
+                out = self.outputs[i](out)
+                # out = nn.functional.softmax(self.outputs[i](branch),dim=1)
+                outputs.append(out)
         return outputs
     
 
@@ -124,7 +134,7 @@ class DQN_AGENT_AB():
 			# Inference using policy_net given (domain, batch, dim)
 			q_values = self.policy_net(state)
 			for i in range(len(q_values)):
-				domain = q_values[i].max(dim=0).indices
+				domain = q_values[i].max(dim=1).indices
 				max_actions.append(self.actions[i][domain])
 		return max_actions
 

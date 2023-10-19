@@ -47,7 +47,8 @@ def get_reward(fps, power, target_fps, c_t, g_t, c_t_s, g_t_s, beta):
         p = -1*power/4500 * (fps - target_fps)/20
     else :
         p = 0
-    u=math.exp(-abs((fps-target_fps))*0.01)
+    
+    u=math.exp(-abs((fps-target_fps))*0.3) + 1/(abs((fps-target_fps))+0.5)
     return u
    
 def save_agent(anget,PICKLE_PATH):
@@ -67,9 +68,9 @@ def load_agent(PICKLE_PATH):
 if __name__=="__main__":
     os.makedirs("save_model/",exist_ok=True)
 
-    agent = DQN_AGENT_AB(s_dim=9,h_dim=8,branches=[16,16,16,40],buffer_size=16000,params=None)
+    agent = DQN_AGENT_AB(s_dim=9,h_dim=32,branches=[16,16,16,40],buffer_size=16000,params=None)
     agent.load_model("save_model/")
-    train_start = 16
+    train_start = 32
     # scores, episodes = [], []
 
     t=1
@@ -86,7 +87,7 @@ if __name__=="__main__":
     g_t=60
 
     print("TCPServr Waiting on port 8702")
-    prev_state=np.asanyarray([3,3,3,3,20,27,40,40,30],dtype=np.float32)
+    prev_state=np.asanyarray([1,0,1,0,1,0,0,0,0],dtype=np.float32)
     score=0
     action=(0,0,0,0)
     copy=1
@@ -95,7 +96,8 @@ if __name__=="__main__":
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(("", PORT))
     server_socket.listen(5)
-    is_training = True
+    is_training = False
+    n_round=0
     try:
         client_socket, address = server_socket.accept()
         fig = plt.figure(figsize=(6,7))
@@ -140,8 +142,12 @@ if __name__=="__main__":
             
             if is_training:
                 if len(agent.mem) >= train_start:
-                    agent.train(1,4,16)
-                if np.random.rand() <= 0.5 and fps<target_fps:
+                    agent.train(1,len(agent.mem)//16,16)
+                    agent.save_model(n_round ,"save_model/")
+                    n_round+=1
+                    print("[Save model]")
+                    
+                if np.random.rand() <= 0.3 and fps<target_fps:
                     print('previous clock : {} {}'.format(c_c,g_c))
                     # NOTE CHECK THESE
                     c_c0=int(random.randint(0,int(c_c0)))
@@ -155,7 +161,7 @@ if __name__=="__main__":
                     action = (c_c0,c_c4,c_c7,g_c)
 
                     # action=3*int(c_c/3)+int(g_c)-1
-                elif np.random.rand() <= 0.5 and fps>target_fps:
+                elif np.random.rand() <= 0.3 and fps>target_fps:
                     print('previous clock : {} {}'.format(c_c,g_c))
                     # NOTE CHECK THESE
                     c_c0=int(random.randint(int(c_c0),15))
@@ -174,6 +180,10 @@ if __name__=="__main__":
                     c_c4=action[1]
                     c_c7=action[2]
                     g_c=action[3]
+
+                if n_round%30==0 and n_round!=0:
+                    agent.sync_model()
+                    print("[Sync model]")
             else:
                 action=agent.max_action(torch.from_numpy(curr_state))
                 c_c0=action[0]
@@ -209,9 +219,7 @@ if __name__=="__main__":
 
             t=t+1
 
-            if t%10 == 0:
-                agent.save_model(t%10 ,"save_model/")
-                print("[Save model]")
+     
 
 
     finally:

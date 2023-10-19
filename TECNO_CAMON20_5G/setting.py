@@ -6,7 +6,7 @@ SERVER_IP="127.0.0.1"
 SERVER_PORT=8702
 
 """Train Setting"""
-EXPERIMENT_TIME=800
+EXPERIMENT_TIME=5000
 ACTION_SPACE = 16*40
 CLOCK_CHANGE__TIME = 30
 CLOCK_CHANGE__LIMIT = 1000
@@ -17,7 +17,7 @@ PICKLE_PATH = "./save_model/agent.data"
 # gpu_power_limit=1600
 
 """Targe Setting"""
-TARGET_FPS = 30
+TARGET_FPS = 25
 TARGET_TEMP = 70
 #TARGET_APP = "com.tencent.ig"
 # TARGET_APP = "org.videolan.vlc"
