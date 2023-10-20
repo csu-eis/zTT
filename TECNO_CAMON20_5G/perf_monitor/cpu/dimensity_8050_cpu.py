@@ -116,4 +116,4 @@ if __name__ == "__main__":
     # cpucontrel7.collectdata()
     # cpucontrel7.setUserspace()
     # cpucontrel4.setUserspace()
-    # CPU.setdefault()
+    CPU.setdefault()

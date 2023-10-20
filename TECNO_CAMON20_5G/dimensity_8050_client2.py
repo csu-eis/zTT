@@ -181,10 +181,10 @@ if __name__=="__main__":
             # c7.setCPUclock(c_c7)
             g.setGPUclock(g_c)
             iter=0
-            time.sleep(0.4)
+            # time.sleep(0.4)
             
         iter+=1
-        # time.sleep(0.5)
+        time.sleep(0.5)
 
     # Logging results
     print('Average Total power={} mW'.format(sum(pl.power_data)/len(pl.power_data)))

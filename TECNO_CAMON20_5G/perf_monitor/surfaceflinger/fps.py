@@ -59,7 +59,7 @@ def set_screen_light(ip,port,level):
 	
 
 if __name__ == "__main__":
-    app ="org.videolan.vlc"
+    app = TARGET_APP
     fps = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT,keyword=app)
     
     fps.get_fps()

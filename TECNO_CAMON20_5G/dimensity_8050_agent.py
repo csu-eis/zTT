@@ -219,8 +219,8 @@ def get_reward(fps, power, target_fps, c_t, g_t, c_t_s, g_t_s, beta):
         P = -1*power/4500 * (fps - target_fps)/20
     else :
         P = 0
-    u=math.exp(-abs((fps-target_fps))*0.01 + P)
-    return u+beta/power
+    u=math.exp(-abs((fps-target_fps))*0.3)
+    return u
    
 def save_agent(anget,PICKLE_PATH):
     f = open(PICKLE_PATH, 'wb')
@@ -272,7 +272,7 @@ if __name__=="__main__":
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(("", PORT))
     server_socket.listen(5)
-    is_training = False
+    is_training = IS_TRAIN
     try:
         client_socket, address = server_socket.accept()
         fig = plt.figure(figsize=(6,7))
@@ -343,7 +343,7 @@ if __name__=="__main__":
             # 	action = c_c * 40 + g_c
             # if target_temp-c_t>=3:
             if is_training:
-                if np.random.rand() <= 0.5 and fps<target_fps:
+                if np.random.rand() <= 0.8 and fps<target_fps:
                     print('previous clock : {} {}'.format(c_c,g_c))
                     # NOTE CHECK THESE
                     c_c=int(random.randint(0,int(c_c)))
@@ -353,7 +353,7 @@ if __name__=="__main__":
                     action = c_c * 40 + g_c
 
                     # action=3*int(c_c/3)+int(g_c)-1
-                elif np.random.rand() <= 0.5 and fps>target_fps:
+                elif np.random.rand() <= 0.8 and fps>target_fps:
                     print('previous clock : {} {}'.format(c_c,g_c))
                     # NOTE CHECK THESE
                     c_c=int(random.randint(int(c_c),15))
@@ -366,55 +366,21 @@ if __name__=="__main__":
                     action=agent.get_action(state)
                     c_c=agent.clk_action_list[action][0]
                     g_c=agent.clk_action_list[action][1]
+                agent.model.save_weights("save_model/model.h5")
+                print("[Save model]")
             else:
                 action=agent.get_action(state)
                 c_c=agent.clk_action_list[action][0]
                 g_c=agent.clk_action_list[action][1]
 #            持久化agent
-            
-
-
             # else:
             # 	action=agent.get_action(state)
             # 	c_c=agent.clk_action_list[action][0]
             # 	g_c=agent.clk_action_list[action][1]	
 
-
                 # do action(one step)
             send_msg=str(c_c)+','+str(g_c)
             client_socket.send(send_msg.encode())
-            ax1.plot(ts, fps_data, linewidth=1, color='pink')
-            ax1.axhline(y=target_fps, xmin=0, xmax=2000)
-            ax1.set_title('Frame rate (Target fps = 60) ')
-            ax1.set_ylabel('Frame rate (fps)')
-            ax1.set_xlabel('Time (s) ')
-            ax1.set_xticks([0, 500, 1000, 1500, 2000])
-            ax1.set_yticks([15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65])
-            ax1.grid(True)
-
-            ax2.plot(ts, power_data, linewidth=1, color='blue')
-            ax2.set_title('Power consumption')
-            ax2.set_ylabel('Power (mW)')
-            ax2.set_yticks([0, 2000, 4000, 6000, 8000])
-            ax2.set_xticks([0, 250, 500, 750, 1000])
-            ax2.set_xlabel('Time (s) ')
-            ax2.grid(True)
-            
-            ax3.plot(ts, avg_q_max_data, linewidth=1, color='orange')
-            ax3.set_ylabel('Q-value')
-            ax3.set_xticks([0, 500, 1000, 1500, 2000])
-            ax3.set_xlabel('Time (s) ')
-            ax3.grid(True)
-            
-            ax4.plot(ts, loss_data, linewidth=1, color='black')
-            ax4.set_ylabel('Average loss')
-            ax2.set_yticks([0, 2000, 4000, 6000, 8000])
-            ax4.set_xticks([0, 500, 1000, 1500, 2000])
-            ax4.set_xlabel('Time (s) ')
-            ax4.grid(True)
-            plt.tight_layout()
-            plt.pause(0.1)
-
 
             if done:
                 agent.update_target_model()
@@ -422,9 +388,9 @@ if __name__=="__main__":
             if t%60 == 0:
                 agent.learning_rate=0.1
                 print('[Reset learning_rate]')
-            if t%10 == 0:
-                agent.model.save_weights("save_model/model.h5")
-                print("[Save model]")
+            # if t%1 == 0:
+            #     agent.model.save_weights("save_model/model.h5")
+            #     print("[Save model]")
             if t==experiment_time:
                 
                 save_agent(agent,PICKLE_PATH)
@@ -434,17 +400,7 @@ if __name__=="__main__":
     finally:
         server_socket.close()
     
-    print(reward_tmp)
-    ts = range(0, len(avg_q_max_data))
-    plt.figure(1)
-    plt.xlabel('time')
-    plt.ylabel('Avg Q-max')
-    plt.grid(True)
-    plt.plot(ts,avg_q_max_data, label='avg_q_max')
-    plt.legend(loc='upper left')
-    plt.title('Average max-Q')
-    plt.show()
-    plt.savefig("./p.png")
+
     
     
 
