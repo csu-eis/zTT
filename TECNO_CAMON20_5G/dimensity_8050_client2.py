@@ -15,6 +15,7 @@ from perf_monitor.surfaceflinger.fps import SurfaceFlingerFPS,set_screen_light
 from perf_monitor.power.dimensity_8050_power import PowerLogger
 from perf_monitor.cpu.dimensity_8050_cpu import CPU
 from perf_monitor.gpu.dimensity_8050_gpu import GPU
+from pylogger import get_logger
 
 def save_csv(fps_data,c0,c4,c7,g,csv_path = CSV_PATH):
     pass
@@ -117,6 +118,7 @@ if __name__=="__main__":
     c7=CPU(7, cpu_type='b', ip=PHINE_IP, port=PHINE_PORT)
     g=GPU(PHINE_IP,PHINE_PORT)
     pl=PowerLogger(PHINE_IP,PHINE_PORT)
+    # logger = get_logger("client")
     
     # sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword="org.videolan.vlc")
     sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword=TARGET_APP)
@@ -136,32 +138,34 @@ if __name__=="__main__":
     client_socket.connect((server_ip, server_port)) 
     print("connect successful")
     time.sleep(4)
-
+    c0.setCPUsclock([8,8,8])
+    g.setGPUclock(8)
     print("Start learning")
     iter = 0
     for t in range(experiment_time) :
         fps = float(sf_fps_driver.get_fps())
         if fps > 60:
             fps = 60.0
-            
-        fps_data.append(fps)
-        c0.collectdata()
-        c4.collectdata()
-        c7.collectdata()
-        g.collectdata()
-        
-        c_p.append(int(pl.getPower()) )
-        c_t.append(float(c0.getCPUtemp()))
-        g_t.append(float(g.getGPUtemp()))
-        g_p.append(0)
-        # 
-        set_screen_light(PHINE_IP,PHINE_PORT,80)
+        start_t = time.time()
+        if t>1:
+            fps_data.append(fps)
+            c0.collectdata()
+            c4.collectdata()
+            c7.collectdata()
+            g.collectdata()
 
-        if iter>=10:
+            c_p.append(int(pl.getPower()) )
+            c_t.append(float(c0.getCPUtemp()))
+            g_t.append(float(g.getGPUtemp()))
+            g_p.append(0)
+        # 
+        set_screen_light(PHINE_IP,PHINE_PORT,15)
+
+        if iter>=8:
             next_state=(c_c0,c_c4,c_c7, g_c, np.average(np.asanyarray(c_p)), np.average(np.asanyarray(g_p)), np.average(np.asanyarray(c_t)), np.average(np.asanyarray(g_t)), np.average(np.asanyarray(fps)))
             # c_c: CPU clock g_c: GPU cock c_p: power g_p: ? c_t: CPU_temp g_t :gpu_temp fps
             send_msg=str(c_c0)+','+str(c_c4)+','+str(c_c7)+','+str(g_c)+','+str(np.average(np.asanyarray(c_p)))+','+str( np.average(np.asanyarray(g_p)))+','+str(np.average(np.asanyarray(c_t)))+','+str(np.average(np.asanyarray(g_t)))+','+str(np.average(np.asanyarray(fps)))
-            print("clinet send")
+            # print("clinet send")
             client_socket.send(send_msg.encode())
             print('[{}] state:{} next_state:{} fps:{}'.format(t, state, next_state, fps))
             state=next_state
@@ -177,15 +181,14 @@ if __name__=="__main__":
             g_c=int(clk[3])
 
             c0.setCPUsclock([c_c0,c_c4,c_c7])
-            # c4.setCPUclock(c_c4)
-            # c7.setCPUclock(c_c7)
             g.setGPUclock(g_c)
             iter=0
-            # time.sleep(0.4)
+            time.sleep(2)
             
         iter+=1
-        time.sleep(0.5)
-
+        # time.sleep(0.2)
+        end_t = time.time()
+        print((end_t-start_t))
     # Logging results
     print('Average Total power={} mW'.format(sum(pl.power_data)/len(pl.power_data)))
     print('Average fps = {} fps'.format(sum(fps_data)/len(fps_data)))

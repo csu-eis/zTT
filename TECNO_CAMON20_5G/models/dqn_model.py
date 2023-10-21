@@ -41,15 +41,28 @@ class DQN_AB(nn.Module):
         self.s_dim, self.h_dim = s_dim, h_dim
         self.branches = branches
         self.shared = nn.Sequential(nn.Linear(self.s_dim, self.h_dim), nn.ReLU(),)
-        self.shared_state = nn.Sequential(nn.Linear(self.h_dim, self.h_dim), nn.ReLU())
+        self.shared_state = nn.Sequential(
+            nn.Linear(self.h_dim, self.h_dim), 
+            nn.ReLU(),
+            nn.Linear(self.h_dim, self.h_dim*2), 
+            nn.ReLU())
         self.domains, self.outputs = [], []
         for i in range(len(branches)):
-            layer = nn.Sequential(nn.Linear(self.h_dim, self.h_dim), nn.ReLU())
+            layer = nn.Sequential(
+                nn.Linear(self.h_dim, self.h_dim*2), 
+                nn.ReLU(),
+                nn.Linear(self.h_dim*2, self.h_dim*2), 
+                nn.ReLU()
+                )
             self.domains.append(layer)
-            layer_out = nn.Sequential(nn.Linear(self.h_dim*2, branches[i]))
+            layer_out = nn.Sequential(
+                nn.Linear(self.h_dim*4, self.h_dim*2),
+                nn.ReLU(),
+            	nn.Linear(self.h_dim*2, branches[i]), 
+                )
             self.outputs.append(layer_out)
-        self.layer_norm = nn.LayerNorm(self.h_dim*2)
-        # self.bn = nn.LayerNorm(self.h_dim*2)
+        self.layer_norm = nn.LayerNorm(self.h_dim*4)
+        
     def forward(self, x):
         if len(x.shape)==1:
             x= x.view(-1,self.s_dim)
@@ -58,20 +71,12 @@ class DQN_AB(nn.Module):
         s = self.shared_state(f)
         outputs = []
         for i in range(len(self.branches)):
-            if len(x.shape)==1:
-                branch = self.domains[i](f)
-                branch = torch.cat([branch,s],dim=0).view(-1,self.h_dim*2)
-                out = self.layer_norm(branch)
-                out = self.outputs[i](out)
-                
-                outputs.append(out)
-            else:
-                branch = self.domains[i](f)
-                branch = torch.cat([branch,s],dim=1)
-                out = self.layer_norm(branch)
-                out = self.outputs[i](out)
-                # out = nn.functional.softmax(self.outputs[i](branch),dim=1)
-                outputs.append(out)
+            branch = self.domains[i](f)
+            branch = torch.cat([branch,s],dim=1)
+            out = self.layer_norm(branch)
+            out = self.outputs[i](out)
+            # out = nn.functional.softmax(self.outputs[i](branch),dim=1)
+            outputs.append(out)
         return outputs
     
 
@@ -109,7 +114,7 @@ class DQN_AGENT_AB():
 		h_dim是隐藏层的温度
 		branches是一个列表内的每一个数字代表该分支的Actions大小。
 		"""
-  		
+		torch.manual_seed(202310)
 		self.eps = 0.8
 		# self.params = params
 		# 2D action space
@@ -117,14 +122,14 @@ class DQN_AGENT_AB():
 		# Experience Replay(requires belief state and observations)
 		self.mem = ReplayMemory(buffer_size)
 		# Initi networks
-		self.policy_net = DQN_AB(s_dim, h_dim, branches)
+		self.evaluate_net = DQN_AB(s_dim, h_dim, branches)
 		self.target_net = DQN_AB(s_dim, h_dim, branches)
 		
-		# self.weights = params["policy_net"]
-		self.target_net.load_state_dict(self.policy_net.state_dict())
+		
+		self.target_net.load_state_dict(self.evaluate_net.state_dict())
 		self.target_net.eval()
 
-		self.optimizer = torch.optim.RMSprop(self.policy_net.parameters())
+		self.optimizer = torch.optim.RMSprop(self.evaluate_net.parameters())
 		self.criterion = nn.SmoothL1Loss() # Huber loss
 		
 	def max_action(self, state):
@@ -132,7 +137,7 @@ class DQN_AGENT_AB():
 		max_actions = []
 		with torch.no_grad():
 			# Inference using policy_net given (domain, batch, dim)
-			q_values = self.policy_net(state)
+			q_values = self.evaluate_net(state)
 			for i in range(len(q_values)):
 				domain = q_values[i].max(dim=1).indices
 				max_actions.append(self.actions[i][domain])
@@ -163,35 +168,37 @@ class DQN_AGENT_AB():
 	def train(self, n_round, n_update, n_batch):
 		# Train on policy_net
 		losses = []
-		self.target_net.train()
-		train_loader = torch.utils.data.DataLoader(
-			self.mem, shuffle=True, batch_size=n_batch)
-		# length = len(train_loader.dataset)
+		self.target_net.eval()
+		self.evaluate_net.train()
+		train_loader = torch.utils.data.DataLoader(self.mem, shuffle=True, batch_size=n_batch)
+		
 		GAMMA = 1.0
+		ALPHA = 0.3
 	
 		# Calcuate loss for each branch and then simply sum up
 		for i, trans in enumerate(train_loader):
 			loss = 0.0 # initialize loss at the beginning of each batch
 			states, actions, next_states, rewards = trans
 			with torch.no_grad():
-				target_result = self.target_net(next_states)
+				next_state_q_result = self.target_net(next_states)
 
-
-            # if len(states)==9:print(1)
-			policy_result = self.policy_net(states)
-			# Loop through each action domain
+			curr_state_q_result = self.evaluate_net(states)
+   
+   
+			# 这里计算LOSS
 			for j in range(len(self.actions)):
-				next_state_values = target_result[j].max(dim=1)[0].detach()
-				expected_state_action_values = (next_state_values*GAMMA) + rewards.float()
-				# Gather action-values that have been taken
+                # 计算next state的Q_max
+				next_state_action_q_value = next_state_q_result[j].max(dim=1)[0].detach()
+				expected_state_action_q_value = (next_state_action_q_value*GAMMA) + rewards.float()
+				expected_state_action_q_value *= ALPHA
+		
 				branch_actions = actions[j].long()
-				state_action_values = policy_result[j].gather(1, branch_actions.unsqueeze(1))
-				loss += self.criterion(state_action_values, expected_state_action_values.unsqueeze(1))
+				curr_state_action_q_value = curr_state_q_result[j].gather(1, branch_actions.unsqueeze(1))
+				loss += self.criterion(curr_state_action_q_value, expected_state_action_q_value.unsqueeze(1))
 			losses.append(loss.item())
 			self.optimizer.zero_grad()
 			loss.backward()
-			# if i>n_update:
-			# 	break
+
 
 			self.optimizer.step()
 		return losses
@@ -207,7 +214,7 @@ class DQN_AGENT_AB():
 		if not os.path.isdir(loadpath): os.makedirs(loadpath)
 		checkpoint =load_checkpoint(loadpath)
 		if checkpoint is not None:
-			self.policy_net.load_state_dict(checkpoint['model_state_dict'])
+			self.evaluate_net.load_state_dict(checkpoint['model_state_dict'])
 			self.target_net.load_state_dict(checkpoint['model_state_dict'])
 			self.target_net.eval()
 		if os.path.exists(os.path.join(loadpath,"memory")):
@@ -216,4 +223,4 @@ class DQN_AGENT_AB():
 			f.close()
 
 	def sync_model(self):
-		self.target_net.load_state_dict(self.policy_net.state_dict())
+		self.target_net.load_state_dict(self.evaluate_net.state_dict())
