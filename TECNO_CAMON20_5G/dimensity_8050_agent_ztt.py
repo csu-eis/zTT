@@ -26,10 +26,6 @@ is_training = IS_TRAIN
 logger = get_logger("agent")
 beta= 2 #4
 
-
-
-
-
     
 def get_w(t,t_s):
     l_v = 0.1
@@ -51,12 +47,22 @@ def get_reward(fps, power, target_fps, c_t, g_t, c_t_s, g_t_s, beta):
     
     u=math.exp(-abs((fps-target_fps))*0.3) + 1/(abs((fps-target_fps))+0.5)
     return u*p
+  
+
+def get_reward_ztt(fps, power, target_fps, c_t, g_t, c_t_s, g_t_s, beta):
+  
    
-# def save_agent(anget,PICKLE_PATH):
-#     f = open(PICKLE_PATH, 'wb')
-#     pickle.dump(anget, f)
-#     f.close()
-#     # print("对象持久化")
+    if fps - target_fps >= 1:
+        u = 1
+    else :
+        u = fps / target_fps
+    
+    # 先不考虑功耗项和温度项
+    # u = u + beta/power
+        
+    return u 
+
+
     
 def format_list(l):
     string = '['+','.join([f'{float(i):0.2f}' for i in l])+']'
