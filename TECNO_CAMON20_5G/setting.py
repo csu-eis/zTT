@@ -13,12 +13,13 @@ CLOCK_CHANGE__LIMIT = 1000
 GPU_POWER_LIMIT=1200
 PICKLE_PATH = "./save_model/agent.data"
 IS_TRAIN = False
+BATCH_SIZE = 4
 # clock_change_time=30
 # cpu_power_limit=1000
 # gpu_power_limit=1600
 
 """Targe Setting"""
-TARGET_FPS = 18
+TARGET_FPS = 10
 TARGET_TEMP = 70
 #TARGET_APP = "com.tencent.ig"
 # TARGET_APP = "org.videolan.vlc"

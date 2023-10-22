@@ -123,10 +123,10 @@ if __name__=="__main__":
     # sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword="org.videolan.vlc")
     sf_fps_driver = SurfaceFlingerFPS(PHINE_IP,PHINE_PORT, keyword=TARGET_APP)
     fps_data=[]
-    c_c0=8
-    c_c4=8
-    c_c7=8
-    g_c=3
+    c_c0=10
+    c_c4=0
+    c_c7=9
+    g_c=15
     c_t=[]
     g_t=[]
     c_p=[]
@@ -138,8 +138,8 @@ if __name__=="__main__":
     client_socket.connect((server_ip, server_port)) 
     print("connect successful")
     time.sleep(4)
-    c0.setCPUsclock([8,8,8])
-    g.setGPUclock(8)
+    c0.setCPUsclock([c_c0,c_c4,c_c7])
+    g.setGPUclock(g_c)
     print("Start learning")
     iter = 0
     for t in range(experiment_time) :

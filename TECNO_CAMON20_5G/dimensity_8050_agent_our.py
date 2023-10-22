@@ -44,13 +44,14 @@ def get_reward(fps, power, target_fps, c_t, g_t, c_t_s, g_t_s, beta):
 
     w = get_w(c_t,c_t_s) + get_w(g_t,g_t_s)
     
-    if fps - target_fps > 2:
+    if (fps - target_fps) > 2:
         p = 1-math.exp(-500.0/power)
     else :
         p = 1
     
     u=math.exp(-abs((fps-target_fps))*0.3) + 1/(abs((fps-target_fps))+0.5)
-    return u*p
+    # return u*p
+    return u
   
 
 def get_reward_ztt(fps, power, target_fps, c_t, g_t, c_t_s, g_t_s, beta):
@@ -102,6 +103,8 @@ if __name__=="__main__":
     server_socket.listen(5)
    
     train_count=0
+    inference = 0
+    curr_state = prev_state
     try:
         client_socket, address = server_socket.accept()
     
@@ -125,93 +128,95 @@ if __name__=="__main__":
             c_t=float(state_tmp[6])
             g_t=float(state_tmp[7])
             fps=float(state_tmp[8])
+            
+            
+            prev_state=curr_state
 
             curr_state=np.asanyarray([c_c0,c_c4,c_c7, g_c, c_p, g_p, c_t, g_t,fps],dtype=np.float32)
             reward = get_reward(fps, c_p+g_p, target_fps, c_t, g_t, target_temp, target_temp, beta)
-            
-            
+            if t > 2:
+                logger.info('[{}] state:{}, action:{}, next_state:{}, reward:{:0.2f}, fps:{:0.2f}'.format(t, 
+                            format_list(prev_state),
+                            format_list(action),
+                            format_list(curr_state),
+                            reward,
+                            fps))
+                agent.mem.push(prev_state, action,curr_state, reward)
            
-            
-#			
-            prev_state=curr_state
 
-            
-            if is_training and t!=0:
+            if is_training and t!=0 :
+
                 if len(agent.mem) >= train_start:
-                    losses=agent.train(4,len(agent.mem)//4,4)
+                    losses=agent.train(4,len(agent.mem)//4,BATCH_SIZE)
                     agent.save_model(train_count ,f"save_model/fps_{TARGET_FPS}/")
                     train_count+=1
                     logger.info(f"[Save model], losses:[{','.join([f'{i:0.2f}' for i in losses])}]",)
                     
-                if np.random.rand() <= 0.5 and target_fps-fps > 1:
-                    logger.info('previous clock : {} {} {} {}'.format(c_c0,c_c4,c_c7,g_c))
-                    # NOTE CHECK THESE
-                    c_c0=int(random.randint(0,int(c_c0)))
-                    c_c4=int(random.randint(0,int(c_c4)))
-                    c_c7=int(random.randint(0,int(c_c7)))
-                    g_c=int(random.randint(0,int(g_c)))
-                    logger.info('explore higher clock@@@@@  {} {} {} {}'.format(c_c0,c_c4,c_c7,g_c))
-                    action = (c_c0,c_c4,c_c7,g_c)
-                    if t!=0:
-                        logger.info('[{}] state:{}, action:{}, next_state:{}, reward:{:0.2f}, fps:{:0.2f}'.format(t, 
-                                format_list(prev_state),
-                                format_list(action),
-                                format_list(curr_state),
-                                reward,
-                                fps))
-                        agent.mem.push(prev_state, action,curr_state, reward)
-                        fps_data.append(fps)
-                        power_data.append(c_p+g_p)
-                        ts.append(t)
-                    # action=3*int(c_c/3)+int(g_c)-1
-                elif np.random.rand() <= 0.5 and fps- target_fps > 1:
-                    logger.info('previous clock : {} {} {} {}'.format(c_c0,c_c4,c_c7,g_c))
-                    # NOTE CHECK THESE
-                    c_c0=int(random.randint(int(c_c0),15))
-                    c_c4=int(random.randint(int(c_c4),15))
-                    c_c7=int(random.randint(int(c_c7),15))
-                    g_c=int(random.randint(int(g_c),39))
-                    logger.info('explore lower clock@@@@@  {} {} {} {}'.format(c_c0,c_c4,c_c7,g_c))
-                    action = (c_c0,c_c4,c_c7,g_c)
-                    if t!=0:
-                        logger.info('[{}] state:{}, action:{}, next_state:{}, reward:{:0.2f}, fps:{:0.2f}'.format(t, 
-                                format_list(prev_state),
-                                format_list(action),
-                                format_list(curr_state),
-                                reward,
-                                fps))
-                        agent.mem.push(prev_state, action,curr_state, reward)
-                        fps_data.append(fps)
-                        power_data.append(c_p+g_p)
-                        ts.append(t)
-                        
-                elif fps- target_fps <=1:
+                if abs(fps- target_fps) <= 1:
+                    
                     c_c0=int(random.randint(0,15))
                     c_c4=int(random.randint(0,15))
                     c_c7=int(random.randint(0,15))
                     g_c=int(random.randint(0,39))
-                    c_c0=action[0]
-                    c_c4=action[1]
-                    c_c7=action[2]
-                    g_c=action[3]
-                else:
+                    logger.critical(f"arrived target fps c_c0: {c_c0} c_c4: {c_c4} c_c7: {c_c7} g_c: {g_c}")
                     
+                    
+                elif np.random.rand() <= 0.3:
+                    logger.info('previous clock : {} {} {} {}'.format(c_c0,c_c4,c_c7,g_c))
+                    # NOTE CHECK THESE
+                    if target_fps - fps > 0:  # explore higher space
+                        c_c0=int(random.randint(max(0,c_c0-4),int(c_c0)))
+                        c_c4=int(random.randint(max(0,c_c4-4),int(c_c4)))
+                        c_c7=int(random.randint(max(0,c_c7-4),int(c_c7)))
+                        g_c=int(random.randint(max(0,g_c-4),int(g_c)))
+                        logger.info('explore higher clock@@@@@  {} {} {} {}'.format(c_c0,c_c4,c_c7,g_c))
+                    elif fps - target_fps > 0:  # explore higher space
+                        c_c0=int(random.randint(int(c_c0),min(15,c_c0+4)))
+                        c_c4=int(random.randint(int(c_c4),min(15,c_c4+4)))
+                        c_c7=int(random.randint(int(c_c7),min(15,c_c7+4)))
+                        g_c=int(random.randint(int(g_c),min(39,g_c+6)))
+                        logger.info('explore lower clock@@@@@  {} {} {} {}'.format(c_c0,c_c4,c_c7,g_c))
+                    # else :
+                    #     c_c0=int(random.randint(0,15))
+                    #     c_c4=int(random.randint(0,15))
+                    #     c_c7=int(random.randint(0,15))
+                    #     g_c=int(random.randint(0,39))
+                    #     logger.info('explore random clock@@@@@  {} {} {} {}'.format(c_c0,c_c4,c_c7,g_c))
+                
+                    # action=3*int(c_c/3)+int(g_c)-1
+                
+                #fellow Q table
+                else:
                     action=agent.max_action(torch.from_numpy(curr_state))
                     c_c0=action[0]
                     c_c4=action[1]
                     c_c7=action[2]
                     g_c=action[3]
-
+                action = (c_c0,c_c4,c_c7,g_c)
+              
+               
+              
                 if train_count%8==0 and train_count!=0:
                     agent.sync_model()
                     logger.info("[Sync model]")
-            else:
+
+            #########
+            else: # inference
+                logger.critical(f"————————————————————————————————————————————————————————")
+                logger.info(f" inference fps:{fps} c_c0: {c_c0} c_c4: {c_c4} c_c7: {c_c7} g_c: {g_c}")
+                # if inference > 10:
+                #     is_training = True
+                #     inference = 0
                 action=agent.max_action(torch.from_numpy(curr_state))
                 c_c0=action[0]
                 c_c4=action[1]
                 c_c7=action[2]
                 g_c=action[3]
-
+                inference = inference + 1
+                
+             
+            
+            
             send_msg=str(c_c0)+','+str(c_c4)+','+str(c_c7)+','+str(g_c)
             client_socket.send(send_msg.encode())
             
