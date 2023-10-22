@@ -131,7 +131,8 @@ class DQN_AGENT_AB():
 
 		self.optimizer = torch.optim.RMSprop(self.evaluate_net.parameters())
 		self.criterion = nn.SmoothL1Loss() # Huber loss
-		
+	
+	
 	def max_action(self, state):
 		# actions for multidomains
 		max_actions = []
@@ -224,3 +225,4 @@ class DQN_AGENT_AB():
 
 	def sync_model(self):
 		self.target_net.load_state_dict(self.evaluate_net.state_dict())
+  
