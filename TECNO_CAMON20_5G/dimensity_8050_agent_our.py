@@ -51,19 +51,29 @@ def get_reward(fps, power, target_fps, c_t, g_t, c_t_s, g_t_s, beta):
     
     u=math.exp(-abs((fps-target_fps))*0.3) + 1/(abs((fps-target_fps))+0.5)
     return u*p
+  
+
+def get_reward_ztt(fps, power, target_fps, c_t, g_t, c_t_s, g_t_s, beta):
+  
    
-# def save_agent(anget,PICKLE_PATH):
-#     f = open(PICKLE_PATH, 'wb')
-#     pickle.dump(anget, f)
-#     f.close()
-#     # print("对象持久化")
+    if fps - target_fps >= 1:
+        u = 1
+    else :
+        u = fps / target_fps
+    
+    # 先不考虑功耗项和温度项
+    # u = u + beta/power
+        
+    return u 
+
+
     
 def format_list(l):
     string = '['+','.join([f'{float(i):0.2f}' for i in l])+']'
     return string
      
 if __name__=="__main__":
-    os.makedirs(f"save_model/fps_14/",exist_ok=True)
+    os.makedirs(f"save_model/fps_{TARGET_FPS}/",exist_ok=True)
 
     agent = DQN_AGENT_AB(s_dim=9,h_dim=32,branches=[16,16,16,40],buffer_size=16000,params=None)
     agent.load_model(f"save_model/fps_{TARGET_FPS}/")
@@ -120,17 +130,7 @@ if __name__=="__main__":
             reward = get_reward(fps, c_p+g_p, target_fps, c_t, g_t, target_temp, target_temp, beta)
             
             
-            if t!=0:
-                logger.info('[{}] state:{}, action:{}, next_state:{}, reward:{:0.2f}, fps:{:0.2f}'.format(t, 
-                        format_list(prev_state),
-                        format_list(action),
-                        format_list(curr_state),
-                        reward,
-                        fps))
-                agent.mem.push(prev_state, action,curr_state, reward)
-                fps_data.append(fps)
-                power_data.append(c_p+g_p)
-                ts.append(t)
+           
             
 #			
             prev_state=curr_state
@@ -152,7 +152,17 @@ if __name__=="__main__":
                     g_c=int(random.randint(0,int(g_c)))
                     logger.info('explore higher clock@@@@@  {} {} {} {}'.format(c_c0,c_c4,c_c7,g_c))
                     action = (c_c0,c_c4,c_c7,g_c)
-
+                    if t!=0:
+                        logger.info('[{}] state:{}, action:{}, next_state:{}, reward:{:0.2f}, fps:{:0.2f}'.format(t, 
+                                format_list(prev_state),
+                                format_list(action),
+                                format_list(curr_state),
+                                reward,
+                                fps))
+                        agent.mem.push(prev_state, action,curr_state, reward)
+                        fps_data.append(fps)
+                        power_data.append(c_p+g_p)
+                        ts.append(t)
                     # action=3*int(c_c/3)+int(g_c)-1
                 elif np.random.rand() <= 0.5 and fps- target_fps > 1:
                     logger.info('previous clock : {} {} {} {}'.format(c_c0,c_c4,c_c7,g_c))
@@ -163,6 +173,27 @@ if __name__=="__main__":
                     g_c=int(random.randint(int(g_c),39))
                     logger.info('explore lower clock@@@@@  {} {} {} {}'.format(c_c0,c_c4,c_c7,g_c))
                     action = (c_c0,c_c4,c_c7,g_c)
+                    if t!=0:
+                        logger.info('[{}] state:{}, action:{}, next_state:{}, reward:{:0.2f}, fps:{:0.2f}'.format(t, 
+                                format_list(prev_state),
+                                format_list(action),
+                                format_list(curr_state),
+                                reward,
+                                fps))
+                        agent.mem.push(prev_state, action,curr_state, reward)
+                        fps_data.append(fps)
+                        power_data.append(c_p+g_p)
+                        ts.append(t)
+                        
+                elif fps- target_fps <=1:
+                    c_c0=int(random.randint(0,15))
+                    c_c4=int(random.randint(0,15))
+                    c_c7=int(random.randint(0,15))
+                    g_c=int(random.randint(0,39))
+                    c_c0=action[0]
+                    c_c4=action[1]
+                    c_c7=action[2]
+                    g_c=action[3]
                 else:
                     
                     action=agent.max_action(torch.from_numpy(curr_state))
