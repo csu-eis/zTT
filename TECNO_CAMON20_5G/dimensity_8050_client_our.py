@@ -154,20 +154,27 @@ if __name__=="__main__":
             c7.collectdata()
             g.collectdata()
 
-            c_p.append(int(pl.getPower()) )
+            # c_p.append(int(pl.getPower()) )
+            c_p.append(1)
             c_t.append(float(c0.getCPUtemp()))
             g_t.append(float(g.getGPUtemp()))
             g_p.append(0)
         # 
         set_screen_light(PHINE_IP,PHINE_PORT,15)
 
-        if iter>=8:
-            next_state=(c_c0,c_c4,c_c7, g_c, np.average(np.asanyarray(c_p)), np.average(np.asanyarray(g_p)), np.average(np.asanyarray(c_t)), np.average(np.asanyarray(g_t)), np.average(np.asanyarray(fps)))
+        if iter>=4:
+            next_state=(c_c0,c_c4,c_c7, g_c, np.average(np.asanyarray(c_p)), np.average(np.asanyarray(g_p)), np.average(np.asanyarray(c_t)), np.average(np.asanyarray(g_t)), np.average(np.asanyarray(fps_data)))
             # c_c: CPU clock g_c: GPU cock c_p: power g_p: ? c_t: CPU_temp g_t :gpu_temp fps
-            send_msg=str(c_c0)+','+str(c_c4)+','+str(c_c7)+','+str(g_c)+','+str(np.average(np.asanyarray(c_p)))+','+str( np.average(np.asanyarray(g_p)))+','+str(np.average(np.asanyarray(c_t)))+','+str(np.average(np.asanyarray(g_t)))+','+str(np.average(np.asanyarray(fps)))
+            # print(fps)
+            
+            send_msg=str(c_c0)+','+str(c_c4)+','+str(c_c7)+','+str(g_c)+','+str(np.average(np.asanyarray(c_p)))+','+str( np.average(np.asanyarray(g_p)))+','+str(np.average(np.asanyarray(c_t)))+','+str(np.average(np.asanyarray(g_t)))+','+str(np.average(np.asanyarray(fps_data)))
             # print("clinet send")
+            c_p = []
+            c_t = []
+            g_t = []
+            fps_data = []
             client_socket.send(send_msg.encode())
-            print('[{}] state:{} next_state:{} fps:{}'.format(t, state, next_state, fps))
+            print('[{}] state:{} next_state:{} fps:{}'.format(t, state, next_state, np.average(np.asanyarray(fps_data))))
             state=next_state
             
             
