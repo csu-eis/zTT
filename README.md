@@ -3,7 +3,6 @@ zTT on MTK8050
 LL
 kk
 ssdSL
-ssss
-ssss
-sdsd
-sdsd
+ddd
+ xxxx
+zzzz
