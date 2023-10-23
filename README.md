@@ -2,4 +2,5 @@
 zTT on MTK8050
 LL
 kk
-KKSL
+ssdSL
+PP
