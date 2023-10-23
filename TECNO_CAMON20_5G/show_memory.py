@@ -6,6 +6,5 @@ filename="save_model/fps_14/memory"
 fread=open(filename,'rb')
 mem = pickle.load(fread)
 
-print("sd",len(mem))
-mem = pickle.load(fread)
-#skd
+print(len(mem))
+
