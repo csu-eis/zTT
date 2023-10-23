@@ -6,5 +6,5 @@ filename="save_model/fps_14/memory"
 fread=open(filename,'rb')
 mem = pickle.load(fread)
 
-print(len(mem))
+print(len(mem),"sd")
 # test merge 
