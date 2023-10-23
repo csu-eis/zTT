@@ -7,5 +7,5 @@ fread=open(filename,'rb')
 mem = pickle.load(fread)
 
 print("sd",len(mem))
-print("sd",len(mem))
+xxxx
 #skd
