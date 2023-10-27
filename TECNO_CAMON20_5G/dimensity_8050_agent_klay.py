@@ -78,11 +78,11 @@ def DQN_train():
 def DQN_inferenc():
     ...
 if __name__=="__main__":
-    os.makedirs(f"save_model/fps_mixed/",exist_ok=True)
+    os.makedirs(f"save_model/fps_10/",exist_ok=True)
 
     agent = DQN_AGENT_AB(s_dim=11,h_dim=32,branches=[16,16,16,40],buffer_size=16000,params=None)
-    agent.load_model(f"save_model/fps_mixed/")
-    train_start = 2
+    agent.load_model(f"save_model/fps_10/")
+    train_start = 20
     # scores, episodes = [], []
 
     t=0

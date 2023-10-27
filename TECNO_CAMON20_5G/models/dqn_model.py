@@ -118,7 +118,7 @@ class DQN_AGENT_AB():
         self.eps = 0.8
         # self.params = params
         # 2D action space
-        self.actions = [np.arange(i) for i in branches]
+        self.action_space = [np.arange(i) for i in branches] #（16 16 16 40）
         # Experience Replay(requires belief state and observations)
         self.mem = ReplayMemory(buffer_size)
         # Initi networks
@@ -141,7 +141,7 @@ class DQN_AGENT_AB():
             q_values = self.evaluate_net(state)
             for i in range(len(q_values)):
                 domain = q_values[i].max(dim=1).indices
-                max_actions.append(self.actions[i][domain])
+                max_actions.append(self.action_space[i][domain])
         return max_actions
 
     def e_gready_action(self, actions, eps):
@@ -154,32 +154,32 @@ class DQN_AGENT_AB():
                     final_actions.append(actions[i])
                 else:
                     # randint in (0, domain_num), for batchsize
-                    final_actions.append(np.random.randint(len(self.actions[i]),size=len(actions[i])))
+                    final_actions.append(np.random.randint(len(self.action_space[i]),size=len(actions[i])))
             else:
                 if p < 1- eps:
                     final_actions.append(actions[i])
                 else:
-                    final_actions.append(np.random.choice(self.actions[i]))
+                    final_actions.append(np.random.choice(self.action_space[i]))
         final_actions = [int(i) for i in final_actions]
         return final_actions
 
     def select_action(self, state):
         return self.e_gready_action(self.max_action(state),self.eps)
 
-    def train(self, n_round, n_update, n_batch):
+    def train(self,n_update, n_batch,gamma = 1.0,alpha = 0.3):
         # Train on policy_net
         losses = []
         self.target_net.eval()
         self.evaluate_net.train()
         train_loader = torch.utils.data.DataLoader(self.mem, shuffle=True, batch_size=n_batch)
         
-        GAMMA = 1.0
-        ALPHA = 0.3
+     
     
         # Calcuate loss for each branch and then simply sum up
         for i, trans in enumerate(train_loader):
             loss = 0.0 # initialize loss at the beginning of each batch
             states, actions, next_states, rewards = trans
+ 
             with torch.no_grad():
                 next_state_q_result = self.target_net(next_states)
 
@@ -187,27 +187,38 @@ class DQN_AGENT_AB():
    
           
             # 这里计算LOSS
-            for j in range(len(self.actions)):
+            for j in range(len(self.action_space)):
                 # 计算next state的Q_max
               
-                if states[j][-1] == 0:
-                    next_state_action_q_value = next_state_q_result[j].max(dim=1)[0].detach()
-        
-                    expected_state_action_q_value = (next_state_action_q_value*GAMMA) + rewards.float()
-                    expected_state_action_q_value *= ALPHA
-                else :
-                    expected_state_action_q_value = rewards.float() 
+                # if states[j][-1] == 0:
+                next_state_action_q_value = next_state_q_result[j].max(dim=1)[0].detach()
+                expected_state_action_q_value = (next_state_action_q_value*gamma) + rewards.float()
+                expected_state_action_q_value *= alpha
+                # else :
+                #     expected_state_action_q_value = rewards.float() 
                     
-
-                branch_actions = actions[j].long()
+                # branch_actions: [16,1]
+                
+                branch_actions = actions[:,j].long()
+                """
+                x: curr_state_q_result[j].shape = [1,16]
+                y: branch_actions.unsqueeze(1).shape = [1,1]
+                out: curr_state_action_q_value.shape = [1,1]
+                out[i][j] = x[i][y[i][j]]
+                 
+                """
                 curr_state_action_q_value = curr_state_q_result[j].gather(1, branch_actions.unsqueeze(1))
                 loss += self.criterion(curr_state_action_q_value, expected_state_action_q_value.unsqueeze(1))
+            
             losses.append(loss.item())
             self.optimizer.zero_grad()
             loss.backward()
 
 
             self.optimizer.step()
+            
+            if i > n_update :
+                break
         return losses
 
     def save_model(self, n_round, savepath):
